@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=80.9.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drawiterm"
+version = "0.1.0"
+description = "Excalidraw-style system design sketching tool for the terminal"
+requires-python = ">=3.12"
+dependencies = [
+  "textual >= 3.2.0",
+]
+
+[project.scripts]
+drawiterm = "drawiterm.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

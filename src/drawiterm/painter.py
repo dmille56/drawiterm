@@ -1,16 +1,11 @@
 """CanvasPainter: stateless renderer. Converts Document + state → CellGrid."""
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
-from typing import NamedTuple
 
 from rich.style import Style
-from rich.text import Text
 
 from .models import (
-    CANVAS_HEIGHT,
-    CANVAS_WIDTH,
     ArrowElement,
     DiamondElement,
     Document,

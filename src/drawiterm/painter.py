@@ -546,20 +546,28 @@ def _paint_straight_arrow(
             put(x, y, ch, head_style)
         elif is_last:
             # No arrowhead: use dominant direction
-            if dy == 0:       ch = "─"
-            elif dx == 0:     ch = "│"
-            elif (sx > 0 and sy < 0) or (sx < 0 and sy > 0): ch = "/"
-            else:             ch = "\\"
+            if dy == 0:
+                ch = "─"
+            elif dx == 0:
+                ch = "│"
+            elif (sx > 0 and sy < 0) or (sx < 0 and sy > 0):
+                ch = "/"
+            else:
+                ch = "\\"
             put(x, y, ch)
         else:
             # Look ahead to pick the right line character
             e2 = 2 * err
             ndx = sx if e2 > -dy else 0
             ndy = sy if e2 < dx else 0
-            if ndy == 0:      ch = "─"
-            elif ndx == 0:    ch = "│"
-            elif (ndx > 0 and ndy < 0) or (ndx < 0 and ndy > 0): ch = "/"
-            else:             ch = "\\"
+            if ndy == 0:
+                ch = "─"
+            elif ndx == 0:
+                ch = "│"
+            elif (ndx > 0 and ndy < 0) or (ndx < 0 and ndy > 0):
+                ch = "/"
+            else:
+                ch = "\\"
             put(x, y, ch)
 
         if is_last:

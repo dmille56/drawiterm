@@ -264,7 +264,7 @@ class TextElement(Element):
         if self._bbox_cache is not None:
             return self._bbox_cache
         lines = self.text.split("\n") if self.text else [""]
-        w = max((len(l) for l in lines), default=1)
+        w = max((len(line) for line in lines), default=1)
         h = len(lines)
         result = (self.col, self.row, max(w, 1), max(h, 1))
         object.__setattr__(self, "_bbox_cache", result)

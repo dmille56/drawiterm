@@ -1,10 +1,20 @@
 """Command pattern for undo/redo. All document mutations go through here."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from .models import Document, Element, ArrowElement, DiamondElement, RectElement, EllipseElement, TextElement, ElementStyle
+from .models import (
+    Document,
+    Element,
+    ArrowElement,
+    DiamondElement,
+    RectElement,
+    EllipseElement,
+    TextElement,
+    ElementStyle,
+)
 
 
 class Command(Protocol):
@@ -15,6 +25,7 @@ class Command(Protocol):
 # ---------------------------------------------------------------------------
 # Concrete commands
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class AddElementCommand:
@@ -78,12 +89,16 @@ class ResizeElementCommand:
     def execute(self, document: Document) -> None:
         e = document.get_by_id(self.element_id)
         if e is not None:
-            _apply_geometry(e, self.new_col, self.new_row, self.new_width, self.new_height)
+            _apply_geometry(
+                e, self.new_col, self.new_row, self.new_width, self.new_height
+            )
 
     def undo(self, document: Document) -> None:
         e = document.get_by_id(self.element_id)
         if e is not None:
-            _apply_geometry(e, self.old_col, self.old_row, self.old_width, self.old_height)
+            _apply_geometry(
+                e, self.old_col, self.old_row, self.old_width, self.old_height
+            )
 
 
 @dataclass
@@ -108,8 +123,16 @@ class EditTextCommand:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _apply_move(element: Element, dc: int, dr: int) -> None:
-    from .models import RectElement, EllipseElement, TextElement, ArrowElement, DiamondElement
+    from .models import (
+        RectElement,
+        EllipseElement,
+        TextElement,
+        ArrowElement,
+        DiamondElement,
+    )
+
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
         element.col += dc
         element.row += dr
@@ -123,8 +146,11 @@ def _apply_move(element: Element, dc: int, dr: int) -> None:
         element.end_row += dr
 
 
-def _apply_geometry(element: Element, col: int, row: int, width: int, height: int) -> None:
+def _apply_geometry(
+    element: Element, col: int, row: int, width: int, height: int
+) -> None:
     from .models import RectElement, EllipseElement, DiamondElement
+
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
         element.col = col
         element.row = row
@@ -153,7 +179,9 @@ class DuplicateElementsCommand:
                 el = document.get_by_id(eid)
                 if el is None:
                     continue
-                clone = _clone_element(el, document.next_id(), self.offset_col, self.offset_row)
+                clone = _clone_element(
+                    el, document.next_id(), self.offset_col, self.offset_row
+                )
                 self._clones.append(clone)
         for clone in self._clones:
             document.add(clone)
@@ -182,32 +210,73 @@ class ToggleArrowStyleCommand:
 
 def _clone_element(el: Element, new_id: int, dc: int, dr: int) -> Element:
     """Return a copy of el with new_id and position offset by (dc, dr)."""
-    style = ElementStyle(fg_color=el.style.fg_color, bg_color=el.style.bg_color, bold=el.style.bold)
+    style = ElementStyle(
+        fg_color=el.style.fg_color, bg_color=el.style.bg_color, bold=el.style.bold
+    )
     if isinstance(el, RectElement):
-        return RectElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
-                           width=el.width, height=el.height, border_style=el.border_style,
-                           label=el.label, style=style)
+        return RectElement(
+            id=new_id,
+            z_order=new_id,
+            col=el.col + dc,
+            row=el.row + dr,
+            width=el.width,
+            height=el.height,
+            border_style=el.border_style,
+            label=el.label,
+            style=style,
+        )
     if isinstance(el, EllipseElement):
-        return EllipseElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
-                              width=el.width, height=el.height, label=el.label, style=style)
+        return EllipseElement(
+            id=new_id,
+            z_order=new_id,
+            col=el.col + dc,
+            row=el.row + dr,
+            width=el.width,
+            height=el.height,
+            label=el.label,
+            style=style,
+        )
     if isinstance(el, ArrowElement):
-        return ArrowElement(id=new_id, z_order=new_id,
-                            start_col=el.start_col + dc, start_row=el.start_row + dr,
-                            end_col=el.end_col + dc, end_row=el.end_row + dr,
-                            arrow_style=el.arrow_style, show_arrowhead=el.show_arrowhead,
-                            label=el.label, style=style)
+        return ArrowElement(
+            id=new_id,
+            z_order=new_id,
+            start_col=el.start_col + dc,
+            start_row=el.start_row + dr,
+            end_col=el.end_col + dc,
+            end_row=el.end_row + dr,
+            arrow_style=el.arrow_style,
+            show_arrowhead=el.show_arrowhead,
+            label=el.label,
+            style=style,
+        )
     if isinstance(el, TextElement):
-        return TextElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
-                           text=el.text, label=el.label, style=style)
+        return TextElement(
+            id=new_id,
+            z_order=new_id,
+            col=el.col + dc,
+            row=el.row + dr,
+            text=el.text,
+            label=el.label,
+            style=style,
+        )
     if isinstance(el, DiamondElement):
-        return DiamondElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
-                              width=el.width, height=el.height, label=el.label, style=style)
+        return DiamondElement(
+            id=new_id,
+            z_order=new_id,
+            col=el.col + dc,
+            row=el.row + dr,
+            width=el.width,
+            height=el.height,
+            label=el.label,
+            style=style,
+        )
     raise ValueError(f"Cannot clone element of type {type(el).__name__}")
 
 
 # ---------------------------------------------------------------------------
 # UndoStack
 # ---------------------------------------------------------------------------
+
 
 class UndoStack:
     def __init__(self, max_depth: int = 50) -> None:

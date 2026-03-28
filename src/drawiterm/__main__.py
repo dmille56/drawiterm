@@ -1,4 +1,5 @@
 """Entry point: drawiterm [filename]"""
+
 from __future__ import annotations
 
 import sys

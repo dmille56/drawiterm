@@ -1,4 +1,5 @@
 """File I/O: save/load .drawiterm JSON files."""
+
 from __future__ import annotations
 
 import json

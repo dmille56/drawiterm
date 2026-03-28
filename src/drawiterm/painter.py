@@ -1,4 +1,5 @@
 """CanvasPainter: stateless renderer. Converts Document + state → CellGrid."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from .models import (
 # ---------------------------------------------------------------------------
 # Cell / CellGrid
 # ---------------------------------------------------------------------------
+
 
 @dataclass(slots=True)
 class Cell:
@@ -70,50 +72,80 @@ _STYLE_CURSOR = Style(color="bright_white", bold=True)
 # ---------------------------------------------------------------------------
 
 SINGLE = {
-    "tl": "┌", "tr": "┐", "bl": "└", "br": "┘",
-    "h": "─", "v": "│",
-    "t": "┬", "b": "┴", "l": "├", "r": "┤", "x": "┼",
+    "tl": "┌",
+    "tr": "┐",
+    "bl": "└",
+    "br": "┘",
+    "h": "─",
+    "v": "│",
+    "t": "┬",
+    "b": "┴",
+    "l": "├",
+    "r": "┤",
+    "x": "┼",
 }
 DOUBLE = {
-    "tl": "╔", "tr": "╗", "bl": "╚", "br": "╝",
-    "h": "═", "v": "║",
-    "t": "╦", "b": "╩", "l": "╠", "r": "╣", "x": "╬",
+    "tl": "╔",
+    "tr": "╗",
+    "bl": "╚",
+    "br": "╝",
+    "h": "═",
+    "v": "║",
+    "t": "╦",
+    "b": "╩",
+    "l": "╠",
+    "r": "╣",
+    "x": "╬",
 }
 ROUNDED = {
-    "tl": "╭", "tr": "╮", "bl": "╰", "br": "╯",
-    "h": "─", "v": "│",
-    "t": "┬", "b": "┴", "l": "├", "r": "┤", "x": "┼",
+    "tl": "╭",
+    "tr": "╮",
+    "bl": "╰",
+    "br": "╯",
+    "h": "─",
+    "v": "│",
+    "t": "┬",
+    "b": "┴",
+    "l": "├",
+    "r": "┤",
+    "x": "┼",
 }
 BORDER_CHARS = {"single": SINGLE, "double": DOUBLE, "rounded": ROUNDED}
 
 ARROW_HEADS = {"E": "►", "W": "◄", "N": "▲", "S": "▼"}
 ARROW_CORNERS = {
-    ("E", "S"): "┐", ("E", "N"): "┘",
-    ("W", "S"): "┌", ("W", "N"): "└",
-    ("S", "E"): "└", ("S", "W"): "┘",
-    ("N", "E"): "┌", ("N", "W"): "┐",
+    ("E", "S"): "┐",
+    ("E", "N"): "┘",
+    ("W", "S"): "┌",
+    ("W", "N"): "└",
+    ("S", "E"): "└",
+    ("S", "W"): "┘",
+    ("N", "E"): "┌",
+    ("N", "W"): "┐",
 }
 
 # ---------------------------------------------------------------------------
 # Selection / tool state passed to painter
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SelectionState:
     selected_ids: set[int] = field(default_factory=set)
     rubber_band: tuple[int, int, int, int] | None = None  # col,row,w,h in canvas coords
-    hovered_id: int | None = None       # element under the mouse cursor
-    editing_id: int | None = None       # element currently being text-edited
-    edit_cursor: int = 0                # byte offset of text cursor within edited text
-    cursor_col: int = -1                # canvas col of mouse cursor (-1 = unknown)
-    cursor_row: int = -1                # canvas row of mouse cursor
+    hovered_id: int | None = None  # element under the mouse cursor
+    editing_id: int | None = None  # element currently being text-edited
+    edit_cursor: int = 0  # byte offset of text cursor within edited text
+    cursor_col: int = -1  # canvas col of mouse cursor (-1 = unknown)
+    cursor_row: int = -1  # canvas row of mouse cursor
 
 
 @dataclass
 class ToolPreviewState:
     """Ghost preview of in-progress draw operation."""
+
     element: Element | None = None  # provisional element not yet in Document
-    tool_name: str = "select"       # current tool, for cursor-shape rendering
+    tool_name: str = "select"  # current tool, for cursor-shape rendering
 
 
 # ---------------------------------------------------------------------------
@@ -145,6 +177,7 @@ def _get_bg_positions(
 # ---------------------------------------------------------------------------
 # Main painter
 # ---------------------------------------------------------------------------
+
 
 class CanvasPainter:
     @staticmethod
@@ -201,10 +234,13 @@ class CanvasPainter:
 # Background
 # ---------------------------------------------------------------------------
 
+
 def _paint_background(grid: CellGrid, viewport: Viewport) -> None:
     positions = _get_bg_positions(
-        viewport.col_offset, viewport.row_offset,
-        viewport.terminal_width, viewport.terminal_height,
+        viewport.col_offset,
+        viewport.row_offset,
+        viewport.terminal_width,
+        viewport.terminal_height,
     )
     for tc, tr in positions:
         grid_set(grid, tc, tr, "·", _STYLE_DOT)
@@ -213,6 +249,7 @@ def _paint_background(grid: CellGrid, viewport: Viewport) -> None:
 # ---------------------------------------------------------------------------
 # Element dispatch
 # ---------------------------------------------------------------------------
+
 
 def _paint_element(
     grid: CellGrid,
@@ -235,6 +272,7 @@ def _paint_element(
 # ---------------------------------------------------------------------------
 # Rectangle
 # ---------------------------------------------------------------------------
+
 
 def _paint_rect(
     grid: CellGrid,
@@ -271,7 +309,9 @@ def _paint_rect(
 
     # Label
     if el.label and w > 2 and h > 2:
-        _paint_label_in_box(grid, el.label, c + 1, r + 1, w - 2, h - 2, viewport, base_style)
+        _paint_label_in_box(
+            grid, el.label, c + 1, r + 1, w - 2, h - 2, viewport, base_style
+        )
 
 
 def _paint_label_in_box(
@@ -304,6 +344,7 @@ def _paint_label_in_box(
 # Ellipse
 # ---------------------------------------------------------------------------
 
+
 def _paint_ellipse(
     grid: CellGrid,
     el: EllipseElement,
@@ -325,12 +366,15 @@ def _paint_ellipse(
         inner_h = max(1, h - 2)
         inner_c = c + (w - inner_w) // 2
         inner_r = r + (h - inner_h) // 2
-        _paint_label_in_box(grid, el.label, inner_c, inner_r, inner_w, inner_h, viewport, base_style)
+        _paint_label_in_box(
+            grid, el.label, inner_c, inner_r, inner_w, inner_h, viewport, base_style
+        )
 
 
 # ---------------------------------------------------------------------------
 # Diamond
 # ---------------------------------------------------------------------------
+
 
 def _bresenham(x0: int, y0: int, x1: int, y1: int):
     """Yield (col, row) integer cells along the line from (x0,y0) to (x1,y1)."""
@@ -365,10 +409,10 @@ def _paint_diamond(
         return
 
     # Four tip points of the diamond
-    top    = (c + w // 2, r)
-    right  = (c + w - 1, r + h // 2)
+    top = (c + w // 2, r)
+    right = (c + w - 1, r + h // 2)
     bottom = (c + w // 2, r + h - 1)
-    left   = (c,          r + h // 2)
+    left = (c, r + h // 2)
 
     def put(cc: int, cr: int, ch: str) -> None:
         tc, tr = viewport.to_terminal(cc, cr)
@@ -389,10 +433,10 @@ def _paint_diamond(
         put(px, py, "\\")
 
     # Tip points drawn last with a distinct marker
-    put(*top,    "*")
-    put(*right,  "*")
+    put(*top, "*")
+    put(*right, "*")
     put(*bottom, "*")
-    put(*left,   "*")
+    put(*left, "*")
 
     # Label at center
     if el.label and w > 4 and h > 4:
@@ -407,6 +451,7 @@ def _paint_diamond(
 # Arrow
 # ---------------------------------------------------------------------------
 
+
 def _paint_arrow(
     grid: CellGrid,
     el: ArrowElement,
@@ -417,9 +462,13 @@ def _paint_arrow(
     sc, sr, ec, er = el.start_col, el.start_row, el.end_col, el.end_row
 
     if el.arrow_style == "straight":
-        _paint_straight_arrow(grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead)
+        _paint_straight_arrow(
+            grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead
+        )
     else:
-        _paint_orthogonal_arrow(grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead)
+        _paint_orthogonal_arrow(
+            grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead
+        )
 
     _paint_arrow_label(grid, el, viewport, base_style)
 
@@ -435,13 +484,13 @@ def _paint_arrow_label(
         return
     sc, sr, ec, er = el.start_col, el.start_row, el.end_col, el.end_row
     if sr == er:
-        lc, lr = (sc + ec) // 2, sr          # midpoint of horizontal
+        lc, lr = (sc + ec) // 2, sr  # midpoint of horizontal
     elif sc == ec:
-        lc, lr = sc, (sr + er) // 2          # midpoint of vertical
+        lc, lr = sc, (sr + er) // 2  # midpoint of vertical
     elif abs(ec - sc) >= abs(er - sr):
-        lc, lr = (sc + ec) // 2, sr          # H→V: mid of the horizontal segment
+        lc, lr = (sc + ec) // 2, sr  # H→V: mid of the horizontal segment
     else:
-        lc, lr = sc, (sr + er) // 2          # V→H: mid of the vertical segment
+        lc, lr = sc, (sr + er) // 2  # V→H: mid of the vertical segment
     label = el.label.split("\n")[0]  # arrows show only the first line
     start_c = lc - len(label) // 2
     for i, ch in enumerate(label):
@@ -451,7 +500,10 @@ def _paint_arrow_label(
 
 def _paint_orthogonal_arrow(
     grid: CellGrid,
-    sc: int, sr: int, ec: int, er: int,
+    sc: int,
+    sr: int,
+    ec: int,
+    er: int,
     viewport: Viewport,
     style: Style,
     show_arrowhead: bool = True,
@@ -474,7 +526,9 @@ def _paint_orthogonal_arrow(
         h_step = 1 if ec > sc else -1
         for col in range(sc, ec, h_step):
             put(col, sr, "─")
-        put_head(ec, er, ARROW_HEADS["E" if ec > sc else "W"] if show_arrowhead else "─")
+        put_head(
+            ec, er, ARROW_HEADS["E" if ec > sc else "W"] if show_arrowhead else "─"
+        )
         return
 
     if sc == ec:
@@ -482,46 +536,65 @@ def _paint_orthogonal_arrow(
         v_step = 1 if er > sr else -1
         for row in range(sr, er, v_step):
             put(sc, row, "│")
-        put_head(ec, er, ARROW_HEADS["S" if er > sr else "N"] if show_arrowhead else "│")
+        put_head(
+            ec, er, ARROW_HEADS["S" if er > sr else "N"] if show_arrowhead else "│"
+        )
         return
 
     h_going_right = ec > sc
-    v_going_down  = er > sr
+    v_going_down = er > sr
     h_step = 1 if h_going_right else -1
-    v_step = 1 if v_going_down  else -1
+    v_step = 1 if v_going_down else -1
 
     if abs(ec - sc) >= abs(er - sr):
         # H → V: horizontal to (ec, sr), corner, vertical to (ec, er)
         for col in range(sc, ec, h_step):
             put(col, sr, "─")
 
-        CORNER_HV = {(True, True): "┐", (True, False): "┘",
-                     (False, True): "┌", (False, False): "└"}
+        CORNER_HV = {
+            (True, True): "┐",
+            (True, False): "┘",
+            (False, True): "┌",
+            (False, False): "└",
+        }
         put(ec, sr, CORNER_HV[(h_going_right, v_going_down)])
 
         for row in range(sr + v_step, er, v_step):
             put(ec, row, "│")
 
-        put_head(ec, er, ARROW_HEADS["S" if v_going_down else "N"] if show_arrowhead else "│")
+        put_head(
+            ec, er, ARROW_HEADS["S" if v_going_down else "N"] if show_arrowhead else "│"
+        )
 
     else:
         # V → H: vertical to (sc, er), corner, horizontal to (ec, er)
         for row in range(sr, er, v_step):
             put(sc, row, "│")
 
-        CORNER_VH = {(True, True): "└", (True, False): "┌",
-                     (False, True): "┘", (False, False): "┐"}
+        CORNER_VH = {
+            (True, True): "└",
+            (True, False): "┌",
+            (False, True): "┘",
+            (False, False): "┐",
+        }
         put(sc, er, CORNER_VH[(h_going_right, v_going_down)])
 
         for col in range(sc + h_step, ec, h_step):
             put(col, er, "─")
 
-        put_head(ec, er, ARROW_HEADS["E" if h_going_right else "W"] if show_arrowhead else "─")
+        put_head(
+            ec,
+            er,
+            ARROW_HEADS["E" if h_going_right else "W"] if show_arrowhead else "─",
+        )
 
 
 def _paint_straight_arrow(
     grid: CellGrid,
-    sc: int, sr: int, ec: int, er: int,
+    sc: int,
+    sr: int,
+    ec: int,
+    er: int,
     viewport: Viewport,
     style: Style,
     show_arrowhead: bool = True,
@@ -540,7 +613,7 @@ def _paint_straight_arrow(
     err = dx - dy
 
     while True:
-        is_last = (x == ec and y == er)
+        is_last = x == ec and y == er
         if is_last and show_arrowhead:
             ch = ("►" if ec > sc else "◄") if dx >= dy else ("▼" if er > sr else "▲")
             put(x, y, ch, head_style)
@@ -586,6 +659,7 @@ def _paint_straight_arrow(
 # Text element
 # ---------------------------------------------------------------------------
 
+
 def _paint_text_element(
     grid: CellGrid,
     el: TextElement,
@@ -603,6 +677,7 @@ def _paint_text_element(
 # ---------------------------------------------------------------------------
 # Selection handles
 # ---------------------------------------------------------------------------
+
 
 def _paint_selection_handles(
     grid: CellGrid,
@@ -624,7 +699,12 @@ def _paint_selection_handles(
         grid_set(grid, tc, tr, ch, style)
 
     # Corners (handles)
-    for hc, hr in [(oc, or_), (oc + ow - 1, or_), (oc, or_ + oh - 1), (oc + ow - 1, or_ + oh - 1)]:
+    for hc, hr in [
+        (oc, or_),
+        (oc + ow - 1, or_),
+        (oc, or_ + oh - 1),
+        (oc + ow - 1, or_ + oh - 1),
+    ]:
         put(hc, hr, "+")
 
     # Edge midpoint handles
@@ -637,6 +717,7 @@ def _paint_selection_handles(
 # ---------------------------------------------------------------------------
 # Hover highlight
 # ---------------------------------------------------------------------------
+
 
 def _paint_hover_highlight(
     grid: CellGrid,
@@ -661,6 +742,7 @@ def _paint_hover_highlight(
 # ---------------------------------------------------------------------------
 # Edit-mode indicator and text cursor
 # ---------------------------------------------------------------------------
+
 
 def _paint_edit_indicator(
     grid: CellGrid,
@@ -702,6 +784,7 @@ def _paint_text_cursor(
 # Mouse cursor indicator
 # ---------------------------------------------------------------------------
 
+
 def _paint_cursor_indicator(
     grid: CellGrid,
     selection: SelectionState,
@@ -732,6 +815,7 @@ def _paint_cursor_indicator(
 # ---------------------------------------------------------------------------
 # Rubber band
 # ---------------------------------------------------------------------------
+
 
 def _paint_rubber_band(
     grid: CellGrid,

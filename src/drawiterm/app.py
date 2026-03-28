@@ -1,4 +1,5 @@
 """DrawitermApp: the root Textual application."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -124,7 +125,8 @@ class DrawitermApp(App):
         filename = str(self._filepath) if self._filepath else "Untitled"
         self._statusbar().update_status(
             TOOL_NAME_MAP.get(self.tool_ctrl.current_tool, "select"),
-            col, row,
+            col,
+            row,
             filename,
             self._dirty,
             selection_count=len(canvas.selection.selected_ids),
@@ -206,6 +208,7 @@ class DrawitermApp(App):
         if not canvas.selection.selected_ids:
             return
         from .commands import DuplicateElementsCommand
+
         cmd = DuplicateElementsCommand(list(canvas.selection.selected_ids))
         self.undo_stack.push(cmd, self.document)
         canvas.selection.selected_ids = {clone.id for clone in cmd._clones}

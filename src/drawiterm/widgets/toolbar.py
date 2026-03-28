@@ -1,4 +1,5 @@
 """Toolbar widget showing the available drawing tools."""
+
 from __future__ import annotations
 
 from textual.app import ComposeResult
@@ -44,7 +45,11 @@ class ToolBar(Static):
 
     def compose(self) -> ComposeResult:
         for tool_id, label, _ in TOOL_BUTTONS:
-            btn = Button(label, id=f"tool_{tool_id}", classes="active" if tool_id == "select" else "")
+            btn = Button(
+                label,
+                id=f"tool_{tool_id}",
+                classes="active" if tool_id == "select" else "",
+            )
             yield btn
 
     def set_active(self, tool_id: str) -> None:

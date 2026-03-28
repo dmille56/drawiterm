@@ -1,18 +1,33 @@
 """CanvasWidget: the main interactive drawing area."""
+
 from __future__ import annotations
 
 from rich.console import Console, ConsoleOptions
 from rich.console import RenderResult as RichRenderResult
 from rich.segment import Segment
 from textual.app import RenderResult
-from textual.events import Click, MouseDown, MouseMove, MouseUp, MouseScrollDown, MouseScrollUp
+from textual.events import (
+    Click,
+    MouseDown,
+    MouseMove,
+    MouseUp,
+    MouseScrollDown,
+    MouseScrollUp,
+)
 from textual.geometry import Size
 from textual.message import Message
 from textual.widget import Widget
 
 from ..commands import UndoStack
 from ..models import Document, Viewport
-from ..painter import CanvasPainter, SelectionState, ToolPreviewState, CellGrid, make_grid, clear_grid
+from ..painter import (
+    CanvasPainter,
+    SelectionState,
+    ToolPreviewState,
+    CellGrid,
+    make_grid,
+    clear_grid,
+)
 from ..tool_controller import ToolController
 
 
@@ -21,13 +36,16 @@ from ..tool_controller import ToolController
 # class redefinition
 # ---------------------------------------------------------------------------
 
+
 class _GridRenderable:
     __slots__ = ("_grid",)
 
     def __init__(self, grid: CellGrid) -> None:
         self._grid = grid
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RichRenderResult:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RichRenderResult:
         grid = self._grid
         last_row = len(grid) - 1
         for row_idx, row in enumerate(grid):
@@ -118,8 +136,13 @@ class CanvasWidget(Widget):
         self._last_mouse_row = row
         self._mouse_button_held = event.button
         changed = self.tool_ctrl.on_mouse_down(
-            col, row, event.button,
-            self.document, self.undo_stack, self.selection, self.preview,
+            col,
+            row,
+            event.button,
+            self.document,
+            self.undo_stack,
+            self.selection,
+            self.preview,
         )
         if changed:
             self.refresh()
@@ -131,8 +154,13 @@ class CanvasWidget(Widget):
         self._last_mouse_col = col
         self._last_mouse_row = row
         changed = self.tool_ctrl.on_mouse_move(
-            col, row, self._mouse_button_held,
-            self.document, self.undo_stack, self.selection, self.preview,
+            col,
+            row,
+            self._mouse_button_held,
+            self.document,
+            self.undo_stack,
+            self.selection,
+            self.preview,
         )
         # Update hover highlight
         if pos_changed:
@@ -150,8 +178,13 @@ class CanvasWidget(Widget):
         col, row = self.viewport.to_canvas(event.x, event.y)
         self._mouse_button_held = 0
         changed = self.tool_ctrl.on_mouse_up(
-            col, row, event.button,
-            self.document, self.undo_stack, self.selection, self.preview,
+            col,
+            row,
+            event.button,
+            self.document,
+            self.undo_stack,
+            self.selection,
+            self.preview,
         )
         if changed:
             self.refresh()
@@ -162,7 +195,9 @@ class CanvasWidget(Widget):
             col, row = self.viewport.to_canvas(event.x, event.y)
             if self._double_click_pending:
                 self._double_click_pending = False
-                changed = self.tool_ctrl.on_double_click(col, row, self.document, self.selection)
+                changed = self.tool_ctrl.on_double_click(
+                    col, row, self.document, self.selection
+                )
                 if changed:
                     self.refresh()
                     self.post_message(self.StatusChanged())

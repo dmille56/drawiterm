@@ -1,11 +1,20 @@
 """ToolController: state machine that converts mouse events → Commands."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from .commands import AddElementCommand, DeleteElementsCommand, DuplicateElementsCommand, MoveElementsCommand, ResizeElementCommand, ToggleArrowStyleCommand, UndoStack
+from .commands import (
+    AddElementCommand,
+    DeleteElementsCommand,
+    DuplicateElementsCommand,
+    MoveElementsCommand,
+    ResizeElementCommand,
+    ToggleArrowStyleCommand,
+    UndoStack,
+)
 from .models import (
     ArrowElement,
     DiamondElement,
@@ -99,7 +108,13 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
-        if self.current_tool in (Tool.RECT, Tool.ELLIPSE, Tool.DIAMOND, Tool.ARROW, Tool.LINE):
+        if self.current_tool in (
+            Tool.RECT,
+            Tool.ELLIPSE,
+            Tool.DIAMOND,
+            Tool.ARROW,
+            Tool.LINE,
+        ):
             self._drawing = True
             self._draw_start_col = col
             self._draw_start_row = row
@@ -183,6 +198,7 @@ class ToolController:
                     el = document.get_by_id(eid)
                     if el is not None:
                         from .commands import _apply_move
+
                         _apply_move(el, dc2, dr2)
                 self._drag_move_last_col = col
                 self._drag_move_last_row = row
@@ -203,7 +219,8 @@ class ToolController:
                 self._resize_orig,
                 self._resize_start_col,
                 self._resize_start_row,
-                col, row,
+                col,
+                row,
                 document,
             )
             return True
@@ -238,12 +255,16 @@ class ToolController:
                 selection.selected_ids = {eid}
 
             elif self.current_tool == Tool.ELLIPSE:
-                el = EllipseElement(id=eid, z_order=eid, col=c, row=r, width=w, height=h)
+                el = EllipseElement(
+                    id=eid, z_order=eid, col=c, row=r, width=w, height=h
+                )
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
             elif self.current_tool == Tool.DIAMOND:
-                el = DiamondElement(id=eid, z_order=eid, col=c, row=r, width=w, height=h)
+                el = DiamondElement(
+                    id=eid, z_order=eid, col=c, row=r, width=w, height=h
+                )
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
@@ -289,11 +310,18 @@ class ToolController:
                 if (new_c, new_r, new_w, new_h) != (oc, or_, ow, oh):
                     # Revert live changes and re-apply via undo stack
                     from .commands import _apply_geometry
+
                     _apply_geometry(el, oc, or_, ow, oh)
                     cmd = ResizeElementCommand(
                         self._resize_element_id,
-                        oc, or_, ow, oh,
-                        new_c, new_r, new_w, new_h,
+                        oc,
+                        or_,
+                        ow,
+                        oh,
+                        new_c,
+                        new_r,
+                        new_w,
+                        new_h,
                     )
                     undo_stack.push(cmd, document)
             return True
@@ -387,8 +415,13 @@ class ToolController:
             for eid in selection.selected_ids:
                 el = document.get_by_id(eid)
                 if el is not None and isinstance(el, ArrowElement):
-                    new_style = "straight" if el.arrow_style == "orthogonal" else "orthogonal"
-                    undo_stack.push(ToggleArrowStyleCommand(eid, el.arrow_style, new_style), document)
+                    new_style = (
+                        "straight" if el.arrow_style == "orthogonal" else "orthogonal"
+                    )
+                    undo_stack.push(
+                        ToggleArrowStyleCommand(eid, el.arrow_style, new_style),
+                        document,
+                    )
                     refreshed = True
             if refreshed:
                 return True
@@ -432,6 +465,7 @@ class ToolController:
         if key == "escape":
             # Commit
             from .commands import EditTextCommand
+
             if text != old_text:
                 cmd = EditTextCommand(eid, old_text, text, not is_text_el)
                 undo_stack.push(cmd, document)
@@ -452,6 +486,7 @@ class ToolController:
             else:
                 # Commit label on Enter for shapes
                 from .commands import EditTextCommand
+
                 if text != old_text:
                     cmd = EditTextCommand(eid, old_text, text, True)
                     undo_stack.push(cmd, document)
@@ -469,6 +504,7 @@ class ToolController:
                 char: str | None = key if key.isprintable() else None
             else:
                 from textual.keys import key_to_character
+
                 char = key_to_character(key)
             if char is not None and char.isprintable():
                 text = text[: self._edit_cursor] + char + text[self._edit_cursor :]
@@ -498,7 +534,10 @@ class ToolController:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _update_preview(ctrl: ToolController, document: Document, preview: ToolPreviewState) -> None:
+
+def _update_preview(
+    ctrl: ToolController, document: Document, preview: ToolPreviewState
+) -> None:
     sc, sr = ctrl._draw_start_col, ctrl._draw_start_row
     ec, er = ctrl._draw_cur_col, ctrl._draw_cur_row
     c = min(sc, ec)
@@ -507,28 +546,46 @@ def _update_preview(ctrl: ToolController, document: Document, preview: ToolPrevi
     h = max(abs(er - sr) + 1, 3)
 
     if ctrl.current_tool == Tool.RECT:
-        preview.element = RectElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
+        preview.element = RectElement(
+            id=-1, z_order=99999, col=c, row=r, width=w, height=h
+        )
     elif ctrl.current_tool == Tool.ELLIPSE:
-        preview.element = EllipseElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
+        preview.element = EllipseElement(
+            id=-1, z_order=99999, col=c, row=r, width=w, height=h
+        )
     elif ctrl.current_tool == Tool.DIAMOND:
-        preview.element = DiamondElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
+        preview.element = DiamondElement(
+            id=-1, z_order=99999, col=c, row=r, width=w, height=h
+        )
     elif ctrl.current_tool == Tool.ARROW:
-        preview.element = ArrowElement(id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er)
+        preview.element = ArrowElement(
+            id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er
+        )
     elif ctrl.current_tool == Tool.LINE:
-        preview.element = ArrowElement(id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er, show_arrowhead=False)
+        preview.element = ArrowElement(
+            id=-1,
+            z_order=99999,
+            start_col=sc,
+            start_row=sr,
+            end_col=ec,
+            end_row=er,
+            show_arrowhead=False,
+        )
     else:
         preview.element = None
 
 
-def _snap_to_shape(col: int, row: int, document: Document, radius: int = 1) -> int | None:
+def _snap_to_shape(
+    col: int, row: int, document: Document, radius: int = 1
+) -> int | None:
     """Return element id if (col, row) is within radius of a shape's edge midpoint."""
     for el in document.elements:
         if isinstance(el, (RectElement, EllipseElement)):
             c, r, w, h = el.bounding_box()
             midpoints = [
-                (c + w // 2, r),          # top
+                (c + w // 2, r),  # top
                 (c + w // 2, r + h - 1),  # bottom
-                (c, r + h // 2),          # left
+                (c, r + h // 2),  # left
                 (c + w - 1, r + h // 2),  # right
             ]
             for mc, mr in midpoints:
@@ -589,6 +646,7 @@ def _apply_resize_preview(
     if handle == HANDLE_BR:
         new_w, new_h = max(3, ow + dc), max(3, oh + dr)
         from .commands import _apply_geometry
+
         _apply_geometry(el, oc, or_, new_w, new_h)
     elif handle == HANDLE_TL:
         new_c = min(oc + ow - 3, oc + dc)
@@ -596,36 +654,43 @@ def _apply_resize_preview(
         new_w = max(3, ow - dc)
         new_h = max(3, oh - dr)
         from .commands import _apply_geometry
+
         _apply_geometry(el, new_c, new_r, new_w, new_h)
     elif handle == HANDLE_TR:
         new_r = min(or_ + oh - 3, or_ + dr)
         new_w = max(3, ow + dc)
         new_h = max(3, oh - dr)
         from .commands import _apply_geometry
+
         _apply_geometry(el, oc, new_r, new_w, new_h)
     elif handle == HANDLE_BL:
         new_c = min(oc + ow - 3, oc + dc)
         new_w = max(3, ow - dc)
         new_h = max(3, oh + dr)
         from .commands import _apply_geometry
+
         _apply_geometry(el, new_c, or_, new_w, new_h)
     elif handle == HANDLE_TM:
         new_r = min(or_ + oh - 3, or_ + dr)
         new_h = max(3, oh - dr)
         from .commands import _apply_geometry
+
         _apply_geometry(el, oc, new_r, ow, new_h)
     elif handle == HANDLE_BM:
         new_h = max(3, oh + dr)
         from .commands import _apply_geometry
+
         _apply_geometry(el, oc, or_, ow, new_h)
     elif handle == HANDLE_ML:
         new_c = min(oc + ow - 3, oc + dc)
         new_w = max(3, ow - dc)
         from .commands import _apply_geometry
+
         _apply_geometry(el, new_c, or_, new_w, oh)
     elif handle == HANDLE_MR:
         new_w = max(3, ow + dc)
         from .commands import _apply_geometry
+
         _apply_geometry(el, oc, or_, new_w, oh)
 
 

@@ -1,4 +1,5 @@
 """Core data model: elements, document, viewport."""
+
 from __future__ import annotations
 
 import bisect
@@ -15,6 +16,7 @@ CANVAS_HEIGHT = 200
 # ---------------------------------------------------------------------------
 # Styles
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ElementStyle:
@@ -37,6 +39,7 @@ class ElementStyle:
 # ---------------------------------------------------------------------------
 # Element base + subtypes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Element:
@@ -357,13 +360,13 @@ def _orthogonal_arrow_cells(
             cells.append((sc, r))
     elif abs(ec - sc) >= abs(er - sr):
         # H → V: horizontal to (ec, sr), then vertical to (ec, er)
-        for c in range(sc, ec + h_step, h_step):   # includes corner
+        for c in range(sc, ec + h_step, h_step):  # includes corner
             cells.append((c, sr))
         for r in range(sr + v_step, er + v_step, v_step):  # skip corner
             cells.append((ec, r))
     else:
         # V → H: vertical to (sc, er), then horizontal to (ec, er)
-        for r in range(sr, er + v_step, v_step):   # includes corner
+        for r in range(sr, er + v_step, v_step):  # includes corner
             cells.append((sc, r))
         for c in range(sc + h_step, ec + h_step, h_step):  # skip corner
             cells.append((c, er))
@@ -373,6 +376,7 @@ def _orthogonal_arrow_cells(
 # ---------------------------------------------------------------------------
 # Document
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Document:
@@ -436,7 +440,12 @@ class Document:
         result = []
         for e in self.elements:
             ec, er, ew, eh = e.bounding_box()
-            if ec < col + width and ec + ew > col and er < row + height and er + eh > row:
+            if (
+                ec < col + width
+                and ec + ew > col
+                and er < row + height
+                and er + eh > row
+            ):
                 result.append(e)
         return result
 
@@ -461,6 +470,7 @@ class Document:
 # ---------------------------------------------------------------------------
 # Viewport
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Viewport:
@@ -490,5 +500,9 @@ class Viewport:
 
     def clamp(self) -> None:
         """Keep viewport within canvas bounds."""
-        self.col_offset = max(0, min(self.col_offset, CANVAS_WIDTH - self.terminal_width))
-        self.row_offset = max(0, min(self.row_offset, CANVAS_HEIGHT - self.terminal_height))
+        self.col_offset = max(
+            0, min(self.col_offset, CANVAS_WIDTH - self.terminal_width)
+        )
+        self.row_offset = max(
+            0, min(self.row_offset, CANVAS_HEIGHT - self.terminal_height)
+        )

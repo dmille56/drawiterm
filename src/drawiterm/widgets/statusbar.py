@@ -34,7 +34,7 @@ class StatusBar(Static):
             hint = "Esc=commit  Enter=newline(text)  ←→=cursor"
         elif tool == "select":
             if selection_count == 0:
-                hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/A/T=tool"
+                hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/D/A/L/T=tool"
             else:
                 hint = (
                     f"{selection_count} selected  "
@@ -63,5 +63,5 @@ class StatusBar(Static):
             undo_indicator += " Ctrl+Y=redo"
 
         self.update(
-            f" {tool.upper()}  {pos}  {name}  | {hint}{undo_indicator}  Ctrl+S=save Ctrl+Q=quit"
+            f" {tool.upper()}  {pos}  {name}  | {hint}{undo_indicator}  Ctrl+O=open Ctrl+S=save Ctrl+Q=quit"
         )

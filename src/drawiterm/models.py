@@ -337,19 +337,37 @@ class DiamondElement(Element):
 def _orthogonal_arrow_cells(
     sc: int, sr: int, ec: int, er: int
 ) -> list[tuple[int, int]]:
-    """Return the list of (col, row) cells that an orthogonal arrow occupies."""
+    """Return the list of (col, row) cells that an orthogonal arrow occupies.
+
+    Routing is chosen by aspect ratio:
+    - Wider than tall  → H → V → H  (bend at mid_col)
+    - Taller than wide → V → H → V  (bend at mid_row)
+    Pure-horizontal and pure-vertical degenerate to a single segment.
+    """
     cells: list[tuple[int, int]] = []
-    # L-shape: horizontal first, then vertical
-    mid_col = ec
-    mid_row = sr
-    # horizontal segment
-    step = 1 if ec >= sc else -1
-    for c in range(sc, ec + step, step):
-        cells.append((c, sr))
-    # vertical segment (skip start of second segment to avoid duplicate)
-    step = 1 if er >= sr else -1
-    for r in range(sr + step, er + step, step):
-        cells.append((ec, r))
+    h_step = 1 if ec > sc else -1
+    v_step = 1 if er > sr else -1
+
+    if sr == er:
+        # Pure horizontal
+        for c in range(sc, ec + h_step, h_step):
+            cells.append((c, sr))
+    elif sc == ec:
+        # Pure vertical
+        for r in range(sr, er + v_step, v_step):
+            cells.append((sc, r))
+    elif abs(ec - sc) >= abs(er - sr):
+        # H → V: horizontal to (ec, sr), then vertical to (ec, er)
+        for c in range(sc, ec + h_step, h_step):   # includes corner
+            cells.append((c, sr))
+        for r in range(sr + v_step, er + v_step, v_step):  # skip corner
+            cells.append((ec, r))
+    else:
+        # V → H: vertical to (sc, er), then horizontal to (ec, er)
+        for r in range(sr, er + v_step, v_step):   # includes corner
+            cells.append((sc, r))
+        for c in range(sc + h_step, ec + h_step, h_step):  # skip corner
+            cells.append((c, er))
     return cells
 
 

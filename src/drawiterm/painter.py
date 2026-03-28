@@ -60,6 +60,7 @@ def grid_set(grid: CellGrid, col: int, row: int, char: str, style: Style) -> Non
 _STYLE_NONE = Style()
 _STYLE_WHITE = Style(color="white")
 _STYLE_YELLOW = Style(color="yellow")
+_STYLE_BOLD = Style(bold=True)  # combined with arrow style for arrowhead cells
 _STYLE_GHOST = Style(dim=True, color="cyan")
 _STYLE_SEL = Style(color="bright_cyan", bold=True)
 _STYLE_DOT = Style(color="grey23")
@@ -425,6 +426,33 @@ def _paint_arrow(
     else:
         _paint_orthogonal_arrow(grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead)
 
+    _paint_arrow_label(grid, el, viewport, base_style)
+
+
+def _paint_arrow_label(
+    grid: CellGrid,
+    el: ArrowElement,
+    viewport: Viewport,
+    style: Style,
+) -> None:
+    """Paint the arrow/line label centered at the midpoint of the path."""
+    if not el.label:
+        return
+    sc, sr, ec, er = el.start_col, el.start_row, el.end_col, el.end_row
+    if sr == er:
+        lc, lr = (sc + ec) // 2, sr          # midpoint of horizontal
+    elif sc == ec:
+        lc, lr = sc, (sr + er) // 2          # midpoint of vertical
+    elif abs(ec - sc) >= abs(er - sr):
+        lc, lr = (sc + ec) // 2, sr          # H→V: mid of the horizontal segment
+    else:
+        lc, lr = sc, (sr + er) // 2          # V→H: mid of the vertical segment
+    label = el.label.split("\n")[0]  # arrows show only the first line
+    start_c = lc - len(label) // 2
+    for i, ch in enumerate(label):
+        tc, tr = viewport.to_terminal(start_c + i, lr)
+        grid_set(grid, tc, tr, ch, style)
+
 
 def _paint_orthogonal_arrow(
     grid: CellGrid,
@@ -433,50 +461,67 @@ def _paint_orthogonal_arrow(
     style: Style,
     show_arrowhead: bool = True,
 ) -> None:
+    head_style = style + _STYLE_BOLD
+
     def put(cc: int, cr: int, ch: str) -> None:
         tc, tr = viewport.to_terminal(cc, cr)
         grid_set(grid, tc, tr, ch, style)
 
+    def put_head(cc: int, cr: int, ch: str) -> None:
+        tc, tr = viewport.to_terminal(cc, cr)
+        grid_set(grid, tc, tr, ch, head_style if show_arrowhead else style)
+
     if sc == ec and sr == er:
         return
 
-    # Determine arrowhead direction
-    if er == sr:
-        head_dir = "E" if ec > sc else "W"
-    elif ec == sc:
-        head_dir = "S" if er > sr else "N"
-    else:
-        # Bend: horizontal first, then vertical
-        head_dir = "S" if er > sr else "N"
+    if sr == er:
+        # Pure horizontal
+        h_step = 1 if ec > sc else -1
+        for col in range(sc, ec, h_step):
+            put(col, sr, "─")
+        put_head(ec, er, ARROW_HEADS["E" if ec > sc else "W"] if show_arrowhead else "─")
+        return
 
-    # Horizontal segment
-    h_step = 1 if ec >= sc else -1
-    for col in range(sc, ec + h_step, h_step):
-        if col == sc and sr == er:
-            continue
-        put(col, sr, "─")
+    if sc == ec:
+        # Pure vertical
+        v_step = 1 if er > sr else -1
+        for row in range(sr, er, v_step):
+            put(sc, row, "│")
+        put_head(ec, er, ARROW_HEADS["S" if er > sr else "N"] if show_arrowhead else "│")
+        return
 
-    if sr != er:
-        # Corner at (ec, sr)
-        if sc != ec:
-            if er > sr:
-                corner = "┐" if ec > sc else "┌"
-            else:
-                corner = "┘" if ec > sc else "└"
-            put(ec, sr, corner)
+    h_going_right = ec > sc
+    v_going_down  = er > sr
+    h_step = 1 if h_going_right else -1
+    v_step = 1 if v_going_down  else -1
 
-        # Vertical segment
-        v_step = 1 if er >= sr else -1
-        v_start = sr + v_step if sc != ec else sr
-        for row in range(v_start, er, v_step):
+    if abs(ec - sc) >= abs(er - sr):
+        # H → V: horizontal to (ec, sr), corner, vertical to (ec, er)
+        for col in range(sc, ec, h_step):
+            put(col, sr, "─")
+
+        CORNER_HV = {(True, True): "┐", (True, False): "┘",
+                     (False, True): "┌", (False, False): "└"}
+        put(ec, sr, CORNER_HV[(h_going_right, v_going_down)])
+
+        for row in range(sr + v_step, er, v_step):
             put(ec, row, "│")
 
-    # Arrowhead at destination
-    if show_arrowhead:
-        put(ec, er, ARROW_HEADS[head_dir])
+        put_head(ec, er, ARROW_HEADS["S" if v_going_down else "N"] if show_arrowhead else "│")
+
     else:
-        # Continue the line through the endpoint
-        put(ec, er, "─" if er == sr else "│")
+        # V → H: vertical to (sc, er), corner, horizontal to (ec, er)
+        for row in range(sr, er, v_step):
+            put(sc, row, "│")
+
+        CORNER_VH = {(True, True): "└", (True, False): "┌",
+                     (False, True): "┘", (False, False): "┐"}
+        put(sc, er, CORNER_VH[(h_going_right, v_going_down)])
+
+        for col in range(sc + h_step, ec, h_step):
+            put(col, er, "─")
+
+        put_head(ec, er, ARROW_HEADS["E" if h_going_right else "W"] if show_arrowhead else "─")
 
 
 def _paint_straight_arrow(
@@ -486,9 +531,11 @@ def _paint_straight_arrow(
     style: Style,
     show_arrowhead: bool = True,
 ) -> None:
-    def put(cc: int, cr: int, ch: str) -> None:
+    head_style = style + _STYLE_BOLD
+
+    def put(cc: int, cr: int, ch: str, s: Style = style) -> None:
         tc, tr = viewport.to_terminal(cc, cr)
-        grid_set(grid, tc, tr, ch, style)
+        grid_set(grid, tc, tr, ch, s)
 
     dx = abs(ec - sc)
     dy = abs(er - sr)
@@ -500,22 +547,26 @@ def _paint_straight_arrow(
     while True:
         is_last = (x == ec and y == er)
         if is_last and show_arrowhead:
-            if dx >= dy:
-                ch = "►" if ec > sc else "◄"
-            else:
-                ch = "▼" if er > sr else "▲"
+            ch = ("►" if ec > sc else "◄") if dx >= dy else ("▼" if er > sr else "▲")
+            put(x, y, ch, head_style)
         elif is_last:
-            # No arrowhead: use the line's dominant direction
-            if dy == 0:
-                ch = "─"
-            elif dx == 0:
-                ch = "│"
-            elif (sx > 0 and sy < 0) or (sx < 0 and sy > 0):
-                ch = "/"
-            else:
-                ch = "\\"
+            # No arrowhead: use dominant direction
+            if dy == 0:       ch = "─"
+            elif dx == 0:     ch = "│"
+            elif (sx > 0 and sy < 0) or (sx < 0 and sy > 0): ch = "/"
+            else:             ch = "\\"
+            put(x, y, ch)
+        else:
+            # Look ahead to pick the right line character
+            e2 = 2 * err
+            ndx = sx if e2 > -dy else 0
+            ndy = sy if e2 < dx else 0
+            if ndy == 0:      ch = "─"
+            elif ndx == 0:    ch = "│"
+            elif (ndx > 0 and ndy < 0) or (ndx < 0 and ndy > 0): ch = "/"
+            else:             ch = "\\"
+            put(x, y, ch)
 
-        put(x, y, ch)
         if is_last:
             break
 

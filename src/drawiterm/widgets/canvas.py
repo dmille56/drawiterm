@@ -4,15 +4,14 @@ from __future__ import annotations
 from rich.console import Console, ConsoleOptions
 from rich.console import RenderResult as RichRenderResult
 from rich.segment import Segment
-from rich.style import Style
 from textual.app import RenderResult
-from textual.events import Click, Key, MouseDown, MouseMove, MouseUp, MouseScrollDown, MouseScrollUp
+from textual.events import Click, MouseDown, MouseMove, MouseUp, MouseScrollDown, MouseScrollUp
 from textual.geometry import Size
 from textual.message import Message
 from textual.widget import Widget
 
 from ..commands import UndoStack
-from ..models import Document, Viewport, CANVAS_WIDTH, CANVAS_HEIGHT
+from ..models import Document, Viewport
 from ..painter import CanvasPainter, SelectionState, ToolPreviewState, CellGrid, make_grid, clear_grid
 from ..tool_controller import ToolController
 

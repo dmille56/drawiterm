@@ -14,7 +14,6 @@ from .models import (
     EllipseElement,
     RectElement,
     TextElement,
-    Viewport,
 )
 from .painter import ToolPreviewState, SelectionState
 

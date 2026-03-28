@@ -1,6 +1,8 @@
 """CanvasWidget: the main interactive drawing area."""
 from __future__ import annotations
 
+from rich.console import Console, ConsoleOptions
+from rich.console import RenderResult as RichRenderResult
 from rich.segment import Segment
 from rich.style import Style
 from textual.app import RenderResult
@@ -11,8 +13,29 @@ from textual.widget import Widget
 
 from ..commands import UndoStack
 from ..models import Document, Viewport, CANVAS_WIDTH, CANVAS_HEIGHT
-from ..painter import CanvasPainter, SelectionState, ToolPreviewState, CellGrid
+from ..painter import CanvasPainter, SelectionState, ToolPreviewState, CellGrid, make_grid, clear_grid
 from ..tool_controller import ToolController
+
+
+# ---------------------------------------------------------------------------
+# Rich renderable for CellGrid — defined at module level to avoid per-frame
+# class redefinition
+# ---------------------------------------------------------------------------
+
+class _GridRenderable:
+    __slots__ = ("_grid",)
+
+    def __init__(self, grid: CellGrid) -> None:
+        self._grid = grid
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RichRenderResult:
+        grid = self._grid
+        last_row = len(grid) - 1
+        for row_idx, row in enumerate(grid):
+            for cell in row:
+                yield Segment(cell.char, cell.style)
+            if row_idx < last_row:
+                yield Segment.line()
 
 
 class CanvasWidget(Widget):
@@ -43,6 +66,7 @@ class CanvasWidget(Widget):
         self._last_mouse_row = 0
         self._mouse_button_held = 0
         self._double_click_pending = False
+        self._grid: CellGrid | None = None  # reused across renders
 
     def get_content_width(self, container: Size, viewport: Size) -> int:
         return container.width
@@ -55,6 +79,7 @@ class CanvasWidget(Widget):
 
     def on_resize(self, event) -> None:
         self._sync_viewport_size()
+        self._grid = None  # force reallocation on next render
 
     def _sync_viewport_size(self) -> None:
         size = self.size
@@ -63,10 +88,26 @@ class CanvasWidget(Widget):
 
     def render(self) -> RenderResult:
         self._sync_viewport_size()
+        rows = self.viewport.terminal_height
+        cols = self.viewport.terminal_width
+
+        # Sync painter state from tool controller
+        self.selection.editing_id = self.tool_ctrl.editing_element_id
+        self.selection.edit_cursor = self.tool_ctrl.edit_cursor
+        self.selection.cursor_col = self._last_mouse_col
+        self.selection.cursor_row = self._last_mouse_row
+        self.preview.tool_name = self.tool_ctrl.current_tool.name.lower()
+
+        # Reuse the grid buffer; reallocate only when dimensions change
+        if self._grid is None or len(self._grid) != rows or len(self._grid[0]) != cols:
+            self._grid = make_grid(rows, cols)
+        else:
+            clear_grid(self._grid)
+
         grid = CanvasPainter.paint(
-            self.document, self.viewport, self.selection, self.preview
+            self.document, self.viewport, self.selection, self.preview, self._grid
         )
-        return _grid_to_renderable(grid, self.viewport.terminal_width, self.viewport.terminal_height)
+        return _GridRenderable(grid)
 
     # ------------------------------------------------------------------
     # Mouse events
@@ -87,15 +128,24 @@ class CanvasWidget(Widget):
 
     def on_mouse_move(self, event: MouseMove) -> None:
         col, row = self.viewport.to_canvas(event.x, event.y)
+        pos_changed = col != self._last_mouse_col or row != self._last_mouse_row
         self._last_mouse_col = col
         self._last_mouse_row = row
         changed = self.tool_ctrl.on_mouse_move(
             col, row, self._mouse_button_held,
             self.document, self.undo_stack, self.selection, self.preview,
         )
+        # Update hover highlight
+        if pos_changed:
+            hits = self.document.get_at(col, row)
+            new_hovered = hits[-1].id if hits else None
+            if new_hovered != self.selection.hovered_id:
+                self.selection.hovered_id = new_hovered
+                changed = True
         if changed:
             self.refresh()
-        self.post_message(self.StatusChanged())
+        if changed or pos_changed:
+            self.post_message(self.StatusChanged())
 
     def on_mouse_up(self, event: MouseUp) -> None:
         col, row = self.viewport.to_canvas(event.x, event.y)
@@ -163,22 +213,3 @@ class CanvasWidget(Widget):
     @property
     def cursor_canvas_pos(self) -> tuple[int, int]:
         return self._last_mouse_col, self._last_mouse_row
-
-
-# ---------------------------------------------------------------------------
-# Convert CellGrid → Rich renderable
-# ---------------------------------------------------------------------------
-
-def _grid_to_renderable(grid: CellGrid, cols: int, rows: int):
-    from rich.console import ConsoleOptions, RenderResult as RichRenderResult
-    from rich.console import Console
-
-    class GridRenderable:
-        def __rich_console__(self, console: Console, options: ConsoleOptions) -> RichRenderResult:
-            for row_idx, row in enumerate(grid):
-                for col_idx, cell in enumerate(row):
-                    yield Segment(cell.char, cell.style)
-                if row_idx < len(grid) - 1:
-                    yield Segment.line()
-
-    return GridRenderable()

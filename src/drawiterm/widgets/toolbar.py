@@ -10,7 +10,9 @@ TOOL_BUTTONS = [
     ("select", "S Select", "s"),
     ("rect", "R Rect", "r"),
     ("ellipse", "E Ellipse", "e"),
+    ("diamond", "D Diamond", "d"),
     ("arrow", "A Arrow", "a"),
+    ("line", "L Line", "l"),
     ("text", "T Text", "t"),
 ]
 

@@ -21,9 +21,47 @@ class StatusBar(Static):
         row: int,
         filename: str,
         dirty: bool,
+        selection_count: int = 0,
+        is_editing: bool = False,
+        can_undo: bool = False,
+        can_redo: bool = False,
     ) -> None:
-        dirty_flag = " *" if dirty else ""
+        dirty_flag = "*" if dirty else ""
+        name = f"{filename}{dirty_flag}"
+        pos = f"col:{col} row:{row}"
+
+        if is_editing:
+            hint = "Esc=commit  Enter=newline(text)  ←→=cursor"
+        elif tool == "select":
+            if selection_count == 0:
+                hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/A/T=tool"
+            else:
+                hint = (
+                    f"{selection_count} selected  "
+                    "Del=delete  Ctrl+D=duplicate  Arrow=nudge  "
+                    "Tab=toggle-arrow  Enter/F2=edit  Esc=deselect"
+                )
+        elif tool == "rect":
+            hint = "Drag to draw rect  S/Esc=cancel"
+        elif tool == "ellipse":
+            hint = "Drag to draw ellipse  S/Esc=cancel"
+        elif tool == "diamond":
+            hint = "Drag to draw diamond  S/Esc=cancel"
+        elif tool == "arrow":
+            hint = "Drag to draw arrow  S/Esc=cancel"
+        elif tool == "line":
+            hint = "Drag to draw line  Tab=toggle-straight  S/Esc=cancel"
+        elif tool == "text":
+            hint = "Click to place text  S/Esc=cancel"
+        else:
+            hint = "R=Rect E=Ellipse A=Arrow T=Text S=Select"
+
+        undo_indicator = ""
+        if can_undo:
+            undo_indicator += " Ctrl+Z=undo"
+        if can_redo:
+            undo_indicator += " Ctrl+Y=redo"
+
         self.update(
-            f" {tool.upper()}  col:{col} row:{row}  {filename}{dirty_flag}"
-            "  | R=Rect E=Ellipse A=Arrow T=Text S=Select  Ctrl+S=Save Ctrl+Z=Undo Ctrl+Q=Quit"
+            f" {tool.upper()}  {pos}  {name}  | {hint}{undo_indicator}  Ctrl+S=save Ctrl+Q=quit"
         )

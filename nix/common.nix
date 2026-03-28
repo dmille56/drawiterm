@@ -4,7 +4,10 @@
 {
   # dependencies needed during build time
   myBuildPackages = [
-    pkgs.python3Packages.textual
+    (pkgs.python3.withPackages (ps: [
+      ps.textual
+      ps.rich
+    ]))
   ];
   
   # dependencies only needed for development

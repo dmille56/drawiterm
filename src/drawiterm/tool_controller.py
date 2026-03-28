@@ -5,9 +5,10 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from .commands import AddElementCommand, DeleteElementsCommand, MoveElementsCommand, ResizeElementCommand, UndoStack
+from .commands import AddElementCommand, DeleteElementsCommand, DuplicateElementsCommand, MoveElementsCommand, ResizeElementCommand, ToggleArrowStyleCommand, UndoStack
 from .models import (
     ArrowElement,
+    DiamondElement,
     Document,
     Element,
     EllipseElement,
@@ -25,7 +26,9 @@ class Tool(Enum):
     SELECT = auto()
     RECT = auto()
     ELLIPSE = auto()
+    DIAMOND = auto()
     ARROW = auto()
+    LINE = auto()
     TEXT = auto()
 
 
@@ -97,13 +100,13 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
-        if self.current_tool in (Tool.RECT, Tool.ELLIPSE, Tool.ARROW):
+        if self.current_tool in (Tool.RECT, Tool.ELLIPSE, Tool.DIAMOND, Tool.ARROW, Tool.LINE):
             self._drawing = True
             self._draw_start_col = col
             self._draw_start_row = row
             self._draw_cur_col = col
             self._draw_cur_row = row
-            if self.current_tool == Tool.ARROW:
+            if self.current_tool in (Tool.ARROW, Tool.LINE):
                 self._arrow_snap_start_id = _snap_to_shape(col, row, document)
             _update_preview(self, document, preview)
             return True
@@ -240,7 +243,12 @@ class ToolController:
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
-            elif self.current_tool == Tool.ARROW:
+            elif self.current_tool == Tool.DIAMOND:
+                el = DiamondElement(id=eid, z_order=eid, col=c, row=r, width=w, height=h)
+                undo_stack.push(AddElementCommand(el), document)
+                selection.selected_ids = {eid}
+
+            elif self.current_tool in (Tool.ARROW, Tool.LINE):
                 snap_end = _snap_to_shape(col, row, document)
                 el = ArrowElement(
                     id=eid,
@@ -249,6 +257,7 @@ class ToolController:
                     start_row=sr,
                     end_col=ec,
                     end_row=er,
+                    show_arrowhead=(self.current_tool == Tool.ARROW),
                     start_element_id=self._arrow_snap_start_id,
                     end_element_id=snap_end,
                 )
@@ -333,8 +342,14 @@ class ToolController:
         if key == "e":
             self.set_tool(Tool.ELLIPSE)
             return True
+        if key == "d":
+            self.set_tool(Tool.DIAMOND)
+            return True
         if key == "a":
             self.set_tool(Tool.ARROW)
+            return True
+        if key == "l":
+            self.set_tool(Tool.LINE)
             return True
         if key == "t":
             self.set_tool(Tool.TEXT)
@@ -365,6 +380,25 @@ class ToolController:
         # Ctrl+A
         if key == "ctrl+a":
             selection.selected_ids = {e.id for e in document.elements}
+            return True
+
+        # Tab — toggle arrow style for selected arrows
+        if key == "tab" and selection.selected_ids:
+            refreshed = False
+            for eid in selection.selected_ids:
+                el = document.get_by_id(eid)
+                if el is not None and isinstance(el, ArrowElement):
+                    new_style = "straight" if el.arrow_style == "orthogonal" else "orthogonal"
+                    undo_stack.push(ToggleArrowStyleCommand(eid, el.arrow_style, new_style), document)
+                    refreshed = True
+            if refreshed:
+                return True
+
+        # Ctrl+D — duplicate selected elements
+        if key == "ctrl+d" and selection.selected_ids:
+            cmd = DuplicateElementsCommand(list(selection.selected_ids))
+            undo_stack.push(cmd, document)
+            selection.selected_ids = {clone.id for clone in cmd._clones}
             return True
 
         # Enter to edit selected text/label
@@ -428,9 +462,18 @@ class ToolController:
             self._edit_cursor = max(0, self._edit_cursor - 1)
         elif key == "right":
             self._edit_cursor = min(len(text), self._edit_cursor + 1)
-        elif len(key) == 1 and key.isprintable():
-            text = text[: self._edit_cursor] + key + text[self._edit_cursor :]
-            self._edit_cursor += 1
+        else:
+            # Resolve the character: single-char keys pass through directly;
+            # Textual named keys (e.g. "space", "exclamation_mark") are mapped
+            # to their character via key_to_character.
+            if len(key) == 1:
+                char: str | None = key if key.isprintable() else None
+            else:
+                from textual.keys import key_to_character
+                char = key_to_character(key)
+            if char is not None and char.isprintable():
+                text = text[: self._edit_cursor] + char + text[self._edit_cursor :]
+                self._edit_cursor += 1
 
         # Apply text change live (will be committed on Escape/Enter)
         _set_edit_text(el, text)
@@ -468,8 +511,12 @@ def _update_preview(ctrl: ToolController, document: Document, preview: ToolPrevi
         preview.element = RectElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
     elif ctrl.current_tool == Tool.ELLIPSE:
         preview.element = EllipseElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
+    elif ctrl.current_tool == Tool.DIAMOND:
+        preview.element = DiamondElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
     elif ctrl.current_tool == Tool.ARROW:
         preview.element = ArrowElement(id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er)
+    elif ctrl.current_tool == Tool.LINE:
+        preview.element = ArrowElement(id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er, show_arrowhead=False)
     else:
         preview.element = None
 

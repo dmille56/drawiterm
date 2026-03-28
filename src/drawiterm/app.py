@@ -22,7 +22,9 @@ TOOL_ID_MAP = {
     "select": Tool.SELECT,
     "rect": Tool.RECT,
     "ellipse": Tool.ELLIPSE,
+    "diamond": Tool.DIAMOND,
     "arrow": Tool.ARROW,
+    "line": Tool.LINE,
     "text": Tool.TEXT,
 }
 
@@ -66,6 +68,8 @@ class DrawitermApp(App):
         Binding("ctrl+y", "redo", "Redo", show=False),
         Binding("ctrl+shift+z", "redo", "Redo", show=False),
         Binding("ctrl+a", "select_all", "Select All", show=False),
+        Binding("ctrl+d", "duplicate", "Duplicate", show=False),
+        Binding("tab", "tab_key", "Toggle Arrow Style", show=False),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
         Binding("ctrl+up", "pan_up", "Pan Up", show=False),
         Binding("ctrl+down", "pan_down", "Pan Down", show=False),
@@ -124,6 +128,10 @@ class DrawitermApp(App):
             col, row,
             filename,
             self._dirty,
+            selection_count=len(canvas.selection.selected_ids),
+            is_editing=self.tool_ctrl.is_editing,
+            can_undo=self.undo_stack.can_undo,
+            can_redo=self.undo_stack.can_redo,
         )
 
     @on(CanvasWidget.StatusChanged)
@@ -145,8 +153,8 @@ class DrawitermApp(App):
     def on_key(self, event) -> None:
         key = event.key
 
-        # Let bindings handle ctrl combos
-        if key.startswith("ctrl+") or key.startswith("shift+"):
+        # Let bindings handle ctrl combos and tab (tab cycles focus by default)
+        if key.startswith("ctrl+") or key.startswith("shift+") or key == "tab":
             return
 
         canvas = self._canvas()
@@ -189,6 +197,22 @@ class DrawitermApp(App):
         canvas = self._canvas()
         canvas.selection.selected_ids = {e.id for e in self.document.elements}
         canvas.refresh()
+
+    def action_tab_key(self) -> None:
+        self._canvas().handle_key("tab")
+        self._update_status()
+
+    def action_duplicate(self) -> None:
+        canvas = self._canvas()
+        if not canvas.selection.selected_ids:
+            return
+        from .commands import DuplicateElementsCommand
+        cmd = DuplicateElementsCommand(list(canvas.selection.selected_ids))
+        self.undo_stack.push(cmd, self.document)
+        canvas.selection.selected_ids = {clone.id for clone in cmd._clones}
+        canvas.refresh()
+        self._dirty = True
+        self._update_status()
 
     def action_quit_app(self) -> None:
         if self._dirty:

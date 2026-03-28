@@ -1,5 +1,5 @@
 {
-  #
+  # .
   description = "drawiterm flake";
 
   inputs = {

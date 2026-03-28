@@ -1,6 +1,7 @@
 """Core data model: elements, document, viewport."""
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass, field
 from typing import Iterator
 
@@ -68,6 +69,8 @@ class Element:
             return ArrowElement.from_dict(d)
         if t == "text":
             return TextElement.from_dict(d)
+        if t == "diamond":
+            return DiamondElement.from_dict(d)
         raise ValueError(f"Unknown element_type: {t!r}")
 
 
@@ -120,6 +123,35 @@ class EllipseElement(Element):
     row: int = 0
     width: int = 10
     height: int = 5
+    _perimeter_cache: frozenset | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+
+    def __setattr__(self, name: str, value) -> None:
+        object.__setattr__(self, name, value)
+        if name in ("col", "row", "width", "height"):
+            object.__setattr__(self, "_perimeter_cache", None)
+
+    def get_perimeter_cells(self) -> frozenset[tuple[int, int]]:
+        if self._perimeter_cache is not None:
+            return self._perimeter_cache
+        c, r, w, h = self.col, self.row, self.width, self.height
+        if w < 2 or h < 2:
+            result: frozenset[tuple[int, int]] = frozenset()
+            object.__setattr__(self, "_perimeter_cache", result)
+            return result
+        cx = c + w / 2.0 - 0.5
+        cy = r + h / 2.0 - 0.5
+        a = w / 2.0
+        b = h / 2.0
+        cells: frozenset[tuple[int, int]] = frozenset(
+            (col, row)
+            for col in range(c, c + w)
+            for row in range(r, r + h)
+            if 0.6 <= ((col - cx) / a) ** 2 + ((row - cy) / b) ** 2 <= 1.35
+        )
+        object.__setattr__(self, "_perimeter_cache", cells)
+        return cells
 
     def bounding_box(self) -> tuple[int, int, int, int]:
         return self.col, self.row, self.width, self.height
@@ -159,6 +191,7 @@ class ArrowElement(Element):
     end_col: int = 10
     end_row: int = 0
     arrow_style: str = "orthogonal"  # "orthogonal" | "straight"
+    show_arrowhead: bool = True
     start_element_id: int | None = None
     end_element_id: int | None = None
 
@@ -190,6 +223,7 @@ class ArrowElement(Element):
             "end_col": self.end_col,
             "end_row": self.end_row,
             "arrow_style": self.arrow_style,
+            "show_arrowhead": self.show_arrowhead,
             "start_element_id": self.start_element_id,
             "end_element_id": self.end_element_id,
         }
@@ -206,6 +240,7 @@ class ArrowElement(Element):
             end_col=d.get("end_col", 10),
             end_row=d.get("end_row", 0),
             arrow_style=d.get("arrow_style", "orthogonal"),
+            show_arrowhead=d.get("show_arrowhead", True),
             start_element_id=d.get("start_element_id"),
             end_element_id=d.get("end_element_id"),
         )
@@ -217,12 +252,24 @@ class TextElement(Element):
     col: int = 0
     row: int = 0
     text: str = ""
+    _bbox_cache: tuple | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+
+    def __setattr__(self, name: str, value) -> None:
+        object.__setattr__(self, name, value)
+        if name in ("text", "col", "row"):
+            object.__setattr__(self, "_bbox_cache", None)
 
     def bounding_box(self) -> tuple[int, int, int, int]:
+        if self._bbox_cache is not None:
+            return self._bbox_cache
         lines = self.text.split("\n") if self.text else [""]
         w = max((len(l) for l in lines), default=1)
         h = len(lines)
-        return self.col, self.row, max(w, 1), max(h, 1)
+        result = (self.col, self.row, max(w, 1), max(h, 1))
+        object.__setattr__(self, "_bbox_cache", result)
+        return result
 
     def to_dict(self) -> dict:
         return {
@@ -246,6 +293,44 @@ class TextElement(Element):
             col=d.get("col", 0),
             row=d.get("row", 0),
             text=d.get("text", ""),
+        )
+
+
+@dataclass
+class DiamondElement(Element):
+    element_type: str = field(default="diamond", init=False)
+    col: int = 0
+    row: int = 0
+    width: int = 10
+    height: int = 5
+
+    def bounding_box(self) -> tuple[int, int, int, int]:
+        return self.col, self.row, self.width, self.height
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "element_type": self.element_type,
+            "z_order": self.z_order,
+            "label": self.label,
+            "style": self.style.to_dict(),
+            "col": self.col,
+            "row": self.row,
+            "width": self.width,
+            "height": self.height,
+        }
+
+    @staticmethod
+    def from_dict(d: dict) -> "DiamondElement":
+        return DiamondElement(
+            id=d["id"],
+            z_order=d.get("z_order", 0),
+            label=d.get("label", ""),
+            style=ElementStyle.from_dict(d.get("style", {})),
+            col=d.get("col", 0),
+            row=d.get("row", 0),
+            width=d.get("width", 10),
+            height=d.get("height", 5),
         )
 
 
@@ -278,11 +363,21 @@ class Document:
     title: str = "Untitled"
     elements: list[Element] = field(default_factory=list)
     _next_id: int = field(default=1, init=False, repr=False)
+    _id_index: dict[int, Element] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
+    _sorted_elements: list[Element] = field(
+        default_factory=list, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         # Ensure _next_id is above any existing element ids
         if self.elements:
             self._next_id = max(e.id for e in self.elements) + 1
+        # Build O(1) id lookup index
+        self._id_index = {e.id: e for e in self.elements}
+        # Build z_order-sorted list for painter
+        self._sorted_elements = sorted(self.elements, key=lambda e: e.z_order)
 
     def next_id(self) -> int:
         nid = self._next_id
@@ -291,23 +386,31 @@ class Document:
 
     def add(self, element: Element) -> Element:
         self.elements.append(element)
+        self._id_index[element.id] = element
+        bisect.insort(self._sorted_elements, element, key=lambda e: e.z_order)
         return element
 
     def remove(self, element_id: int) -> Element | None:
-        for i, e in enumerate(self.elements):
-            if e.id == element_id:
-                return self.elements.pop(i)
-        return None
+        el = self._id_index.pop(element_id, None)
+        if el is None:
+            return None
+        self.elements.remove(el)
+        self._sorted_elements.remove(el)
+        return el
 
     def get_by_id(self, element_id: int) -> Element | None:
-        for e in self.elements:
-            if e.id == element_id:
-                return e
-        return None
+        return self._id_index.get(element_id)
 
     def get_at(self, col: int, row: int) -> list[Element]:
-        """Hit-test: return all elements whose bounding box contains (col, row), back-to-front."""
-        return [e for e in self.elements if e.contains_point(col, row)]
+        """Hit-test: return all elements containing (col, row).
+
+        Ordered so that hits[-1] is the element that should be selected on
+        click: smallest bounding area first (more specific elements win over
+        large containing shapes), with z_order as a tie-breaker (higher wins).
+        """
+        hits = [e for e in self.elements if e.contains_point(col, row)]
+        hits.sort(key=lambda e: (-e.bounding_box()[2] * e.bounding_box()[3], e.z_order))
+        return hits
 
     def elements_in_rect(
         self, col: int, row: int, width: int, height: int
@@ -358,6 +461,15 @@ class Viewport:
     def is_visible(self, canvas_col: int, canvas_row: int) -> bool:
         tc, tr = self.to_terminal(canvas_col, canvas_row)
         return 0 <= tc < self.terminal_width and 0 <= tr < self.terminal_height
+
+    def bbox_visible(self, col: int, row: int, width: int, height: int) -> bool:
+        """True if the bounding box overlaps the terminal viewport."""
+        return (
+            col < self.col_offset + self.terminal_width
+            and col + width > self.col_offset
+            and row < self.row_offset + self.terminal_height
+            and row + height > self.row_offset
+        )
 
     def clamp(self) -> None:
         """Keep viewport within canvas bounds."""

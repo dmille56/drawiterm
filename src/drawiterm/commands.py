@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from .models import Document, Element
+from .models import Document, Element, ArrowElement, DiamondElement, RectElement, EllipseElement, TextElement, ElementStyle
 
 
 class Command(Protocol):
@@ -109,8 +109,8 @@ class EditTextCommand:
 # ---------------------------------------------------------------------------
 
 def _apply_move(element: Element, dc: int, dr: int) -> None:
-    from .models import RectElement, EllipseElement, TextElement, ArrowElement
-    if isinstance(element, (RectElement, EllipseElement)):
+    from .models import RectElement, EllipseElement, TextElement, ArrowElement, DiamondElement
+    if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
         element.col += dc
         element.row += dr
     elif isinstance(element, TextElement):
@@ -124,8 +124,8 @@ def _apply_move(element: Element, dc: int, dr: int) -> None:
 
 
 def _apply_geometry(element: Element, col: int, row: int, width: int, height: int) -> None:
-    from .models import RectElement, EllipseElement
-    if isinstance(element, (RectElement, EllipseElement)):
+    from .models import RectElement, EllipseElement, DiamondElement
+    if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
         element.col = col
         element.row = row
         element.width = width
@@ -133,11 +133,76 @@ def _apply_geometry(element: Element, col: int, row: int, width: int, height: in
 
 
 def _set_text(element: Element, text: str, is_label: bool) -> None:
-    from .models import TextElement
     if is_label:
         element.label = text
     elif isinstance(element, TextElement):
         element.text = text
+
+
+@dataclass
+class DuplicateElementsCommand:
+    element_ids: list[int]
+    offset_col: int = 2
+    offset_row: int = 2
+    _clones: list[Element] = field(default_factory=list, init=False, repr=False)
+
+    def execute(self, document: Document) -> None:
+        if not self._clones:
+            # First execution: create clones with new IDs
+            for eid in self.element_ids:
+                el = document.get_by_id(eid)
+                if el is None:
+                    continue
+                clone = _clone_element(el, document.next_id(), self.offset_col, self.offset_row)
+                self._clones.append(clone)
+        for clone in self._clones:
+            document.add(clone)
+
+    def undo(self, document: Document) -> None:
+        for clone in self._clones:
+            document.remove(clone.id)
+
+
+@dataclass
+class ToggleArrowStyleCommand:
+    element_id: int
+    old_style: str
+    new_style: str
+
+    def execute(self, document: Document) -> None:
+        e = document.get_by_id(self.element_id)
+        if e is not None and isinstance(e, ArrowElement):
+            e.arrow_style = self.new_style
+
+    def undo(self, document: Document) -> None:
+        e = document.get_by_id(self.element_id)
+        if e is not None and isinstance(e, ArrowElement):
+            e.arrow_style = self.old_style
+
+
+def _clone_element(el: Element, new_id: int, dc: int, dr: int) -> Element:
+    """Return a copy of el with new_id and position offset by (dc, dr)."""
+    style = ElementStyle(fg_color=el.style.fg_color, bg_color=el.style.bg_color, bold=el.style.bold)
+    if isinstance(el, RectElement):
+        return RectElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
+                           width=el.width, height=el.height, border_style=el.border_style,
+                           label=el.label, style=style)
+    if isinstance(el, EllipseElement):
+        return EllipseElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
+                              width=el.width, height=el.height, label=el.label, style=style)
+    if isinstance(el, ArrowElement):
+        return ArrowElement(id=new_id, z_order=new_id,
+                            start_col=el.start_col + dc, start_row=el.start_row + dr,
+                            end_col=el.end_col + dc, end_row=el.end_row + dr,
+                            arrow_style=el.arrow_style, show_arrowhead=el.show_arrowhead,
+                            label=el.label, style=style)
+    if isinstance(el, TextElement):
+        return TextElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
+                           text=el.text, label=el.label, style=style)
+    if isinstance(el, DiamondElement):
+        return DiamondElement(id=new_id, z_order=new_id, col=el.col + dc, row=el.row + dr,
+                              width=el.width, height=el.height, label=el.label, style=style)
+    raise ValueError(f"Cannot clone element of type {type(el).__name__}")
 
 
 # ---------------------------------------------------------------------------

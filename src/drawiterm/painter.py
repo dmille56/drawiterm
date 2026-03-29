@@ -112,7 +112,7 @@ ROUNDED = {
 }
 BORDER_CHARS = {"single": SINGLE, "double": DOUBLE, "rounded": ROUNDED}
 
-ARROW_HEADS = {"E": "►", "W": "◄", "N": "▲", "S": "▼"}
+ARROW_HEADS = {"E": "▶", "W": "◀", "N": "▲", "S": "▼"}
 ARROW_CORNERS = {
     ("E", "S"): "┐",
     ("E", "N"): "┘",
@@ -615,8 +615,11 @@ def _paint_straight_arrow(
     while True:
         is_last = x == ec and y == er
         if is_last and show_arrowhead:
-            ch = ("►" if ec > sc else "◄") if dx >= dy else ("▼" if er > sr else "▲")
-            put(x, y, ch, head_style)
+            if dx >= dy:
+                direction = "E" if ec > sc else "W"
+            else:
+                direction = "S" if er > sr else "N"
+            put(x, y, ARROW_HEADS[direction], head_style)
         elif is_last:
             # No arrowhead: use dominant direction
             if dy == 0:

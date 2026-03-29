@@ -17,7 +17,7 @@ Draw boxes, arrows, and labels directly in your terminal using keyboard and mous
 
 ## Installation
 
-### With Nix (recommended)
+### With Nix
 
 ```bash
 nix run github:dmille56/drawiterm
@@ -29,10 +29,16 @@ Or enter a dev shell:
 nix develop
 ```
 
+### With pipx (recommended)
+
+```bash
+pipx install drawiterm
+```
+
 ### With pip
 
 ```bash
-pip install .
+pip install drawiterm
 ```
 
 ## Usage

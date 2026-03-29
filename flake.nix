@@ -21,6 +21,14 @@
           shellHook = ''
             # so running the python module runs correctly
             export PYTHONPATH="src"
+
+            # convenience helpers to run the project as a module:
+            # - drawiterm: simple alias
+            # - run-drawiterm: function that forwards arguments
+            alias drawiterm='python -m drawiterm'
+            run-drawiterm() { python -m drawiterm "$@"; }
+            # export function on shells that support it (ignore errors)
+            export -f run-drawiterm 2>/dev/null || true
           '';
         };
         

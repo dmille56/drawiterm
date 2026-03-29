@@ -71,6 +71,8 @@ class ToolController:
     _drag_moving: bool = False
     _drag_move_last_col: int = 0
     _drag_move_last_row: int = 0
+    _drag_total_dc: int = 0
+    _drag_total_dr: int = 0
 
     _rubber_banding: bool = False
     _rubber_start_col: int = 0
@@ -160,6 +162,10 @@ class ToolController:
                 self._drag_moving = True
                 self._drag_move_last_col = col
                 self._drag_move_last_row = row
+                self._drag_total_dc += dc
+                self._drag_total_dr += dr
+                self._drag_total_dc = 0
+                self._drag_total_dr = 0
                 return True
             else:
                 # Start rubber band
@@ -288,7 +294,19 @@ class ToolController:
 
         if self._drag_moving:
             self._drag_moving = False
-            # The move was applied live; nothing more needed
+            total_dc, total_dr = self._drag_total_dc, self._drag_total_dr
+            self._drag_total_dc = 0
+            self._drag_total_dr = 0
+            if total_dc != 0 or total_dr != 0:
+                # Revert the live-applied move and push undoable command
+                for eid in selection.selected_ids:
+                    el = document.get_by_id(eid)
+                    if el is not None:
+                        from .commands import _apply_move
+
+                        _apply_move(el, -total_dc, -total_dr)
+                moves = [(eid, total_dc, total_dr) for eid in selection.selected_ids]
+                undo_stack.push(MoveElementsCommand(moves), document)
             return True
 
         if self._rubber_banding:

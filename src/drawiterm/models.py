@@ -379,9 +379,7 @@ def _orthogonal_arrow_cells(
     return cells
 
 
-def _straight_arrow_cells(
-    sc: int, sr: int, ec: int, er: int
-) -> list[tuple[int, int]]:
+def _straight_arrow_cells(sc: int, sr: int, ec: int, er: int) -> list[tuple[int, int]]:
     """Return list of (col,row) cells along a straight line from start to end."""
     cells: list[tuple[int, int]] = []
     dx = abs(ec - sc)

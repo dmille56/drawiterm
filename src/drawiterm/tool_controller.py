@@ -578,7 +578,13 @@ def _update_preview(
         )
     elif ctrl.current_tool == Tool.ARROW:
         preview.element = ArrowElement(
-            id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er, arrow_style="orthogonal"
+            id=-1,
+            z_order=99999,
+            start_col=sc,
+            start_row=sr,
+            end_col=ec,
+            end_row=er,
+            arrow_style="orthogonal",
         )
     elif ctrl.current_tool == Tool.LINE:
         preview.element = ArrowElement(

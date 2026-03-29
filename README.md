@@ -20,7 +20,7 @@ Draw boxes, arrows, and labels directly in your terminal using keyboard and mous
 ### With Nix (recommended)
 
 ```bash
-nix run github:yourusername/drawiterm
+nix run github:dmille56/drawiterm
 ```
 
 Or enter a dev shell:

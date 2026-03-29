@@ -309,9 +309,7 @@ def _paint_rect(
 
     # Label
     if el.label and w > 2 and h > 2:
-        _paint_label_in_box(
-            grid, el.label, c + 1, r + 1, w - 2, h - 2, viewport, base_style
-        )
+        _paint_label_in_box(grid, el.label, c + 1, r + 1, w - 2, h - 2, viewport, base_style)
 
 
 def _paint_label_in_box(
@@ -462,13 +460,9 @@ def _paint_arrow(
     sc, sr, ec, er = el.start_col, el.start_row, el.end_col, el.end_row
 
     if el.arrow_style == "straight":
-        _paint_straight_arrow(
-            grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead
-        )
+        _paint_straight_arrow(grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead)
     else:
-        _paint_orthogonal_arrow(
-            grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead
-        )
+        _paint_orthogonal_arrow(grid, sc, sr, ec, er, viewport, base_style, el.show_arrowhead)
 
     _paint_arrow_label(grid, el, viewport, base_style)
 
@@ -526,9 +520,7 @@ def _paint_orthogonal_arrow(
         h_step = 1 if ec > sc else -1
         for col in range(sc, ec, h_step):
             put(col, sr, "─")
-        put_head(
-            ec, er, ARROW_HEADS["E" if ec > sc else "W"] if show_arrowhead else "─"
-        )
+        put_head(ec, er, ARROW_HEADS["E" if ec > sc else "W"] if show_arrowhead else "─")
         return
 
     if sc == ec:
@@ -536,9 +528,7 @@ def _paint_orthogonal_arrow(
         v_step = 1 if er > sr else -1
         for row in range(sr, er, v_step):
             put(sc, row, "│")
-        put_head(
-            ec, er, ARROW_HEADS["S" if er > sr else "N"] if show_arrowhead else "│"
-        )
+        put_head(ec, er, ARROW_HEADS["S" if er > sr else "N"] if show_arrowhead else "│")
         return
 
     h_going_right = ec > sc
@@ -562,9 +552,7 @@ def _paint_orthogonal_arrow(
         for row in range(sr + v_step, er, v_step):
             put(ec, row, "│")
 
-        put_head(
-            ec, er, ARROW_HEADS["S" if v_going_down else "N"] if show_arrowhead else "│"
-        )
+        put_head(ec, er, ARROW_HEADS["S" if v_going_down else "N"] if show_arrowhead else "│")
 
     else:
         # V → H: vertical to (sc, er), corner, horizontal to (ec, er)

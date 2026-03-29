@@ -261,16 +261,12 @@ class ToolController:
                 selection.selected_ids = {eid}
 
             elif self.current_tool == Tool.ELLIPSE:
-                el = EllipseElement(
-                    id=eid, z_order=eid, col=c, row=r, width=w, height=h
-                )
+                el = EllipseElement(id=eid, z_order=eid, col=c, row=r, width=w, height=h)
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
             elif self.current_tool == Tool.DIAMOND:
-                el = DiamondElement(
-                    id=eid, z_order=eid, col=c, row=r, width=w, height=h
-                )
+                el = DiamondElement(id=eid, z_order=eid, col=c, row=r, width=w, height=h)
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
@@ -434,9 +430,7 @@ class ToolController:
             for eid in selection.selected_ids:
                 el = document.get_by_id(eid)
                 if el is not None and isinstance(el, ArrowElement):
-                    new_style = (
-                        "straight" if el.arrow_style == "orthogonal" else "orthogonal"
-                    )
+                    new_style = "straight" if el.arrow_style == "orthogonal" else "orthogonal"
                     undo_stack.push(
                         ToggleArrowStyleCommand(eid, el.arrow_style, new_style),
                         document,
@@ -554,9 +548,7 @@ class ToolController:
 # ---------------------------------------------------------------------------
 
 
-def _update_preview(
-    ctrl: ToolController, document: Document, preview: ToolPreviewState
-) -> None:
+def _update_preview(ctrl: ToolController, document: Document, preview: ToolPreviewState) -> None:
     sc, sr = ctrl._draw_start_col, ctrl._draw_start_row
     ec, er = ctrl._draw_cur_col, ctrl._draw_cur_row
     c = min(sc, ec)
@@ -565,17 +557,11 @@ def _update_preview(
     h = max(abs(er - sr) + 1, 3)
 
     if ctrl.current_tool == Tool.RECT:
-        preview.element = RectElement(
-            id=-1, z_order=99999, col=c, row=r, width=w, height=h
-        )
+        preview.element = RectElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
     elif ctrl.current_tool == Tool.ELLIPSE:
-        preview.element = EllipseElement(
-            id=-1, z_order=99999, col=c, row=r, width=w, height=h
-        )
+        preview.element = EllipseElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
     elif ctrl.current_tool == Tool.DIAMOND:
-        preview.element = DiamondElement(
-            id=-1, z_order=99999, col=c, row=r, width=w, height=h
-        )
+        preview.element = DiamondElement(id=-1, z_order=99999, col=c, row=r, width=w, height=h)
     elif ctrl.current_tool == Tool.ARROW:
         preview.element = ArrowElement(
             id=-1,
@@ -601,9 +587,7 @@ def _update_preview(
         preview.element = None
 
 
-def _snap_to_shape(
-    col: int, row: int, document: Document, radius: int = 1
-) -> int | None:
+def _snap_to_shape(col: int, row: int, document: Document, radius: int = 1) -> int | None:
     """Return element id if (col, row) is within radius of a shape's edge midpoint."""
     for el in document.elements:
         if isinstance(el, (RectElement, EllipseElement)):

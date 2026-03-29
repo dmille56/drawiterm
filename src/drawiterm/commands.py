@@ -89,16 +89,12 @@ class ResizeElementCommand:
     def execute(self, document: Document) -> None:
         e = document.get_by_id(self.element_id)
         if e is not None:
-            _apply_geometry(
-                e, self.new_col, self.new_row, self.new_width, self.new_height
-            )
+            _apply_geometry(e, self.new_col, self.new_row, self.new_width, self.new_height)
 
     def undo(self, document: Document) -> None:
         e = document.get_by_id(self.element_id)
         if e is not None:
-            _apply_geometry(
-                e, self.old_col, self.old_row, self.old_width, self.old_height
-            )
+            _apply_geometry(e, self.old_col, self.old_row, self.old_width, self.old_height)
 
 
 @dataclass
@@ -146,9 +142,7 @@ def _apply_move(element: Element, dc: int, dr: int) -> None:
         element.end_row += dr
 
 
-def _apply_geometry(
-    element: Element, col: int, row: int, width: int, height: int
-) -> None:
+def _apply_geometry(element: Element, col: int, row: int, width: int, height: int) -> None:
     from .models import DiamondElement, EllipseElement, RectElement
 
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
@@ -179,9 +173,7 @@ class DuplicateElementsCommand:
                 el = document.get_by_id(eid)
                 if el is None:
                     continue
-                clone = _clone_element(
-                    el, document.next_id(), self.offset_col, self.offset_row
-                )
+                clone = _clone_element(el, document.next_id(), self.offset_col, self.offset_row)
                 self._clones.append(clone)
         for clone in self._clones:
             document.add(clone)
@@ -210,9 +202,7 @@ class ToggleArrowStyleCommand:
 
 def _clone_element(el: Element, new_id: int, dc: int, dr: int) -> Element:
     """Return a copy of el with new_id and position offset by (dc, dr)."""
-    style = ElementStyle(
-        fg_color=el.style.fg_color, bg_color=el.style.bg_color, bold=el.style.bold
-    )
+    style = ElementStyle(fg_color=el.style.fg_color, bg_color=el.style.bg_color, bold=el.style.bold)
     if isinstance(el, RectElement):
         return RectElement(
             id=new_id,

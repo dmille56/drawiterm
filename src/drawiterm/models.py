@@ -125,9 +125,7 @@ class EllipseElement(Element):
     row: int = 0
     width: int = 10
     height: int = 5
-    _perimeter_cache: frozenset | None = field(
-        default=None, init=False, repr=False, compare=False
-    )
+    _perimeter_cache: frozenset | None = field(default=None, init=False, repr=False, compare=False)
 
     def __setattr__(self, name: str, value) -> None:
         object.__setattr__(self, name, value)
@@ -207,9 +205,7 @@ class ArrowElement(Element):
     def contains_point(self, col: int, row: int) -> bool:
         # Arrow hit test: check if point is on any cell of the arrow path
         if self.arrow_style == "straight":
-            path = _straight_arrow_cells(
-                self.start_col, self.start_row, self.end_col, self.end_row
-            )
+            path = _straight_arrow_cells(self.start_col, self.start_row, self.end_col, self.end_row)
         else:
             path = _orthogonal_arrow_cells(
                 self.start_col, self.start_row, self.end_col, self.end_row
@@ -260,9 +256,7 @@ class TextElement(Element):
     col: int = 0
     row: int = 0
     text: str = ""
-    _bbox_cache: tuple | None = field(
-        default=None, init=False, repr=False, compare=False
-    )
+    _bbox_cache: tuple | None = field(default=None, init=False, repr=False, compare=False)
 
     def __setattr__(self, name: str, value) -> None:
         object.__setattr__(self, name, value)
@@ -342,9 +336,7 @@ class DiamondElement(Element):
         )
 
 
-def _orthogonal_arrow_cells(
-    sc: int, sr: int, ec: int, er: int
-) -> list[tuple[int, int]]:
+def _orthogonal_arrow_cells(sc: int, sr: int, ec: int, er: int) -> list[tuple[int, int]]:
     """Return the list of (col, row) cells that an orthogonal arrow occupies.
 
     Routing is chosen by aspect ratio:
@@ -462,19 +454,12 @@ class Document:
         hits.sort(key=lambda e: (-e.bounding_box()[2] * e.bounding_box()[3], e.z_order))
         return hits
 
-    def elements_in_rect(
-        self, col: int, row: int, width: int, height: int
-    ) -> list[Element]:
+    def elements_in_rect(self, col: int, row: int, width: int, height: int) -> list[Element]:
         """Return elements whose bounding box overlaps the given rect."""
         result = []
         for e in self.elements:
             ec, er, ew, eh = e.bounding_box()
-            if (
-                ec < col + width
-                and ec + ew > col
-                and er < row + height
-                and er + eh > row
-            ):
+            if ec < col + width and ec + ew > col and er < row + height and er + eh > row:
                 result.append(e)
         return result
 
@@ -529,9 +514,5 @@ class Viewport:
 
     def clamp(self) -> None:
         """Keep viewport within canvas bounds."""
-        self.col_offset = max(
-            0, min(self.col_offset, CANVAS_WIDTH - self.terminal_width)
-        )
-        self.row_offset = max(
-            0, min(self.row_offset, CANVAS_HEIGHT - self.terminal_height)
-        )
+        self.col_offset = max(0, min(self.col_offset, CANVAS_WIDTH - self.terminal_width))
+        self.row_offset = max(0, min(self.row_offset, CANVAS_HEIGHT - self.terminal_height))

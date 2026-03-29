@@ -42,9 +42,7 @@ class _GridRenderable:
     def __init__(self, grid: CellGrid) -> None:
         self._grid = grid
 
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RichRenderResult:
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RichRenderResult:
         grid = self._grid
         last_row = len(grid) - 1
         for row_idx, row in enumerate(grid):
@@ -229,9 +227,7 @@ class CanvasWidget(Widget):
             col, row = self.viewport.to_canvas(event.x, event.y)
             if self._double_click_pending:
                 self._double_click_pending = False
-                changed = self.tool_ctrl.on_double_click(
-                    col, row, self.document, self.selection
-                )
+                changed = self.tool_ctrl.on_double_click(col, row, self.document, self.selection)
                 if changed:
                     self.refresh()
                     self.post_message(self.StatusChanged())

@@ -19,6 +19,5 @@
 
     pkgs.ruff
     pkgs.ty
-    pkgs.black
   ];
 }

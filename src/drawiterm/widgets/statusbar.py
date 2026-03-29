@@ -64,5 +64,7 @@ class StatusBar(Static):
             undo_indicator += " Ctrl+Y=redo"
 
         self.update(
-            f" {tool.upper()}  {pos}  {name}  | {hint}{undo_indicator}  Ctrl+O=open Ctrl+S=save Ctrl+Q=quit"
+            f" {tool.upper()}  {pos}  {name}  | {hint}{undo_indicator}  "
+            "Ctrl+O=open Ctrl+S=save "
+            "Ctrl+Q=quit"
         )

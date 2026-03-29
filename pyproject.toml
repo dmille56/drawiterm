@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drawiterm"
-version = "0.1.0"
+version = "0.1.0-beta"
 description = "Excalidraw-style system design sketching tool for the terminal"
 requires-python = ">=3.12"
 dependencies = [

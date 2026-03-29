@@ -162,8 +162,6 @@ class ToolController:
                 self._drag_moving = True
                 self._drag_move_last_col = col
                 self._drag_move_last_row = row
-                self._drag_total_dc += dc
-                self._drag_total_dr += dr
                 self._drag_total_dc = 0
                 self._drag_total_dr = 0
                 return True
@@ -208,6 +206,8 @@ class ToolController:
                         _apply_move(el, dc2, dr2)
                 self._drag_move_last_col = col
                 self._drag_move_last_row = row
+                self._drag_total_dc += dc
+                self._drag_total_dr += dr
             return True
 
         if self._rubber_banding and button == 1:

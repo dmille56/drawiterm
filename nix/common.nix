@@ -2,18 +2,19 @@
 { pkgs }:
 
 {
-  # dependencies needed during build time
+  # dependencies needed during build time (include pytest so the interpreter
+  # created by withPackages can run "python -m pytest")
   myBuildPackages = [
     (pkgs.python3.withPackages (ps: [
       ps.textual
       ps.rich
+      ps.pytest
     ]))
   ];
   
-  # dependencies only needed for development
+  # dependencies only needed for development (pytest moved into myBuildPackages)
   myDevPackages = [
     pkgs.python3Packages.coverage
-    pkgs.python3Packages.pytest
     pkgs.python3Packages.ipdb
 
     pkgs.ruff

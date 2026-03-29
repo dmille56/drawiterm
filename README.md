@@ -54,6 +54,8 @@ drawiterm mydiagram.drawiterm   # open existing file
 | `l` | Line |
 | `t` | Text |
 
+Arrows and Lines are orthogonal by default; use Shift+Tab to toggle to straight.
+
 ## Key Bindings
 
 | Key | Action |
@@ -66,8 +68,10 @@ drawiterm mydiagram.drawiterm   # open existing file
 | `Ctrl+D` | Duplicate selection |
 | `Delete` / `Backspace` | Delete selected elements |
 | Arrow keys | Nudge selected elements |
-| `Tab` | Toggle arrow style (on selected arrows) |
+| `Tab` | Next tool |
+| `Shift+Tab` | Toggle arrow/line style (straight/orthogonal) |
 | `Ctrl+Arrow` | Pan canvas |
+| `Ctrl+Left-drag` | Pan canvas |
 | `Ctrl+Q` | Quit |
 
 Double-click an element to edit its label. Press `Escape` to commit the edit.

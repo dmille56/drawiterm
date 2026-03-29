@@ -69,7 +69,7 @@ class DrawitermApp(App):
         Binding("ctrl+shift+z", "redo", "Redo", show=False),
         Binding("ctrl+a", "select_all", "Select All", show=False),
         Binding("ctrl+d", "duplicate", "Duplicate", show=False),
-        Binding("tab", "tab_key", "Toggle Arrow Style", show=False),
+        Binding("tab", "tab_key", "Toggle Arrow Style", show=False, priority=True),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
         Binding("ctrl+up", "pan_up", "Pan Up", show=False),
         Binding("ctrl+down", "pan_down", "Pan Down", show=False),

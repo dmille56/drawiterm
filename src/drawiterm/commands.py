@@ -6,14 +6,14 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 from .models import (
-    Document,
-    Element,
     ArrowElement,
     DiamondElement,
-    RectElement,
-    EllipseElement,
-    TextElement,
+    Document,
+    Element,
     ElementStyle,
+    EllipseElement,
+    RectElement,
+    TextElement,
 )
 
 
@@ -126,11 +126,11 @@ class EditTextCommand:
 
 def _apply_move(element: Element, dc: int, dr: int) -> None:
     from .models import (
-        RectElement,
-        EllipseElement,
-        TextElement,
         ArrowElement,
         DiamondElement,
+        EllipseElement,
+        RectElement,
+        TextElement,
     )
 
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
@@ -149,7 +149,7 @@ def _apply_move(element: Element, dc: int, dr: int) -> None:
 def _apply_geometry(
     element: Element, col: int, row: int, width: int, height: int
 ) -> None:
-    from .models import RectElement, EllipseElement, DiamondElement
+    from .models import DiamondElement, EllipseElement, RectElement
 
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
         element.col = col

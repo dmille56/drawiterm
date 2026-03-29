@@ -24,7 +24,7 @@ from .models import (
     RectElement,
     TextElement,
 )
-from .painter import ToolPreviewState, SelectionState
+from .painter import SelectionState, ToolPreviewState
 
 if TYPE_CHECKING:
     pass

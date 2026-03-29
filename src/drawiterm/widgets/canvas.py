@@ -10,9 +10,9 @@ from textual.events import (
     Click,
     MouseDown,
     MouseMove,
-    MouseUp,
     MouseScrollDown,
     MouseScrollUp,
+    MouseUp,
 )
 from textual.geometry import Size
 from textual.message import Message
@@ -22,14 +22,13 @@ from ..commands import UndoStack
 from ..models import Document, Viewport
 from ..painter import (
     CanvasPainter,
+    CellGrid,
     SelectionState,
     ToolPreviewState,
-    CellGrid,
-    make_grid,
     clear_grid,
+    make_grid,
 )
 from ..tool_controller import ToolController
-
 
 # ---------------------------------------------------------------------------
 # Rich renderable for CellGrid — defined at module level to avoid per-frame

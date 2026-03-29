@@ -1,5 +1,5 @@
-from drawiterm.painter import make_grid, grid_set, _paint_text_element, _STYLE_WHITE
 from drawiterm.models import TextElement, Viewport
+from drawiterm.painter import _STYLE_WHITE, _paint_text_element, grid_set, make_grid
 
 
 def test_make_grid_and_grid_set():

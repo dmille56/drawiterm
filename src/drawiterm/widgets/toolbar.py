@@ -6,7 +6,6 @@ from textual.app import ComposeResult
 from textual.message import Message
 from textual.widgets import Button, Static
 
-
 TOOL_BUTTONS = [
     ("select", "S Select", "s"),
     ("rect", "R Rect", "r"),

@@ -84,6 +84,9 @@ class CanvasWidget(Widget):
         self._mouse_button_held = 0
         self._double_click_pending = False
         self._grid: CellGrid | None = None  # reused across renders
+        self._panning: bool = False
+        self._pan_last_x: int = 0
+        self._pan_last_y: int = 0
 
     def get_content_width(self, container: Size, viewport: Size) -> int:
         return container.width
@@ -135,6 +138,13 @@ class CanvasWidget(Widget):
         self._last_mouse_col = col
         self._last_mouse_row = row
         self._mouse_button_held = event.button
+        # Ctrl+Left = begin panning (bypass tool actions)
+        if event.ctrl and event.button == 1:
+            self._panning = True
+            self._pan_last_x = event.x
+            self._pan_last_y = event.y
+            self.post_message(self.StatusChanged())
+            return
         changed = self.tool_ctrl.on_mouse_down(
             col,
             row,
@@ -149,6 +159,25 @@ class CanvasWidget(Widget):
             self.post_message(self.StatusChanged())
 
     def on_mouse_move(self, event: MouseMove) -> None:
+        # Handle panning first
+        if self._panning:
+            dx = event.x - self._pan_last_x
+            dy = event.y - self._pan_last_y
+            if dx != 0 or dy != 0:
+                # Move canvas in the same direction as the mouse
+                self.viewport.col_offset -= dx
+                self.viewport.row_offset -= dy
+                self.viewport.clamp()
+                self._pan_last_x = event.x
+                self._pan_last_y = event.y
+                # Update last mouse canvas coords under the cursor
+                self._last_mouse_col, self._last_mouse_row = self.viewport.to_canvas(
+                    event.x, event.y
+                )
+                self.refresh()
+                self.post_message(self.StatusChanged())
+            return
+
         col, row = self.viewport.to_canvas(event.x, event.y)
         pos_changed = col != self._last_mouse_col or row != self._last_mouse_row
         self._last_mouse_col = col
@@ -175,6 +204,12 @@ class CanvasWidget(Widget):
             self.post_message(self.StatusChanged())
 
     def on_mouse_up(self, event: MouseUp) -> None:
+        if self._panning:
+            self._panning = False
+            self._mouse_button_held = 0
+            self.post_message(self.StatusChanged())
+            return
+
         col, row = self.viewport.to_canvas(event.x, event.y)
         self._mouse_button_held = 0
         changed = self.tool_ctrl.on_mouse_up(

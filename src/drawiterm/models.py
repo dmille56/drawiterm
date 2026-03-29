@@ -192,7 +192,7 @@ class ArrowElement(Element):
     start_row: int = 0
     end_col: int = 10
     end_row: int = 0
-    arrow_style: str = "orthogonal"  # "orthogonal" | "straight"
+    arrow_style: str = "straight"  # "orthogonal" | "straight"
     show_arrowhead: bool = True
     start_element_id: int | None = None
     end_element_id: int | None = None
@@ -206,9 +206,15 @@ class ArrowElement(Element):
 
     def contains_point(self, col: int, row: int) -> bool:
         # Arrow hit test: check if point is on any cell of the arrow path
-        for pc, pr in _orthogonal_arrow_cells(
-            self.start_col, self.start_row, self.end_col, self.end_row
-        ):
+        if self.arrow_style == "straight":
+            path = _straight_arrow_cells(
+                self.start_col, self.start_row, self.end_col, self.end_row
+            )
+        else:
+            path = _orthogonal_arrow_cells(
+                self.start_col, self.start_row, self.end_col, self.end_row
+            )
+        for pc, pr in path:
             if pc == col and pr == row:
                 return True
         return False
@@ -370,6 +376,31 @@ def _orthogonal_arrow_cells(
             cells.append((sc, r))
         for c in range(sc + h_step, ec + h_step, h_step):  # skip corner
             cells.append((c, er))
+    return cells
+
+
+def _straight_arrow_cells(
+    sc: int, sr: int, ec: int, er: int
+) -> list[tuple[int, int]]:
+    """Return list of (col,row) cells along a straight line from start to end."""
+    cells: list[tuple[int, int]] = []
+    dx = abs(ec - sc)
+    dy = abs(er - sr)
+    sx = 1 if ec > sc else -1
+    sy = 1 if er > sr else -1
+    x, y = sc, sr
+    err = dx - dy
+    while True:
+        cells.append((x, y))
+        if x == ec and y == er:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
     return cells
 
 

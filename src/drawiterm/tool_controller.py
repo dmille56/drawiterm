@@ -283,7 +283,7 @@ class ToolController:
                     start_row=sr,
                     end_col=ec,
                     end_row=er,
-                    arrow_style="straight",
+                    arrow_style=("orthogonal" if self.current_tool == Tool.ARROW else "straight"),
                     show_arrowhead=(self.current_tool == Tool.ARROW),
                     start_element_id=self._arrow_snap_start_id,
                     end_element_id=snap_end,
@@ -578,7 +578,7 @@ def _update_preview(
         )
     elif ctrl.current_tool == Tool.ARROW:
         preview.element = ArrowElement(
-            id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er, arrow_style="straight"
+            id=-1, z_order=99999, start_col=sc, start_row=sr, end_col=ec, end_row=er, arrow_style="orthogonal"
         )
     elif ctrl.current_tool == Tool.LINE:
         preview.element = ArrowElement(

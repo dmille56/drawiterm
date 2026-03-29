@@ -192,7 +192,7 @@ class ArrowElement(Element):
     start_row: int = 0
     end_col: int = 10
     end_row: int = 0
-    arrow_style: str = "straight"  # "orthogonal" | "straight"
+    arrow_style: str = "orthogonal"  # "orthogonal" | "straight"
     show_arrowhead: bool = True
     start_element_id: int | None = None
     end_element_id: int | None = None

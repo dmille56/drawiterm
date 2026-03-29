@@ -69,7 +69,8 @@ class DrawitermApp(App):
         Binding("ctrl+shift+z", "redo", "Redo", show=False),
         Binding("ctrl+a", "select_all", "Select All", show=False),
         Binding("ctrl+d", "duplicate", "Duplicate", show=False),
-        Binding("tab", "tab_key", "Toggle Arrow Style", show=False, priority=True),
+        Binding("tab", "next_tool", "Next Tool", show=False, priority=True),
+        Binding("shift+tab", "toggle_arrow_style", "Toggle Arrow Style", show=False, priority=True),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
         Binding("ctrl+up", "pan_up", "Pan Up", show=False),
         Binding("ctrl+down", "pan_down", "Pan Down", show=False),
@@ -199,7 +200,32 @@ class DrawitermApp(App):
         canvas.selection.selected_ids = {e.id for e in self.document.elements}
         canvas.refresh()
 
-    def action_tab_key(self) -> None:
+    def action_next_tool(self) -> None:
+        order = [
+            Tool.SELECT,
+            Tool.RECT,
+            Tool.ELLIPSE,
+            Tool.DIAMOND,
+            Tool.ARROW,
+            Tool.LINE,
+            Tool.TEXT,
+        ]
+        cur = self.tool_ctrl.current_tool
+        try:
+            idx = order.index(cur)
+        except ValueError:
+            idx = 0
+        next_tool = order[(idx + 1) % len(order)]
+        self.tool_ctrl.set_tool(next_tool)
+        # Clear any ghost preview when switching tools
+        self._canvas().preview.element = None
+        # Sync toolbar + UI
+        self._toolbar().set_active(TOOL_NAME_MAP.get(next_tool, "select"))
+        self._canvas().refresh()
+        self._update_status()
+
+    def action_toggle_arrow_style(self) -> None:
+        # Reuse existing toggle logic in ToolController.on_key("tab")
         self._canvas().handle_key("tab")
         self._update_status()
 

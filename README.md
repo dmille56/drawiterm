@@ -97,7 +97,7 @@ nix develop
 export PYTHONPATH=src
 ```
 
-### Install pre-commit hooks
+### Install pre-commit hooks (so that it runs ruff everytime when you commit to fix issues)
 `pre-commit install`
 
 ### Commands

@@ -13,15 +13,19 @@
       perSystem = { self', pkgs, system, ... }:
       let
         common = import ./nix/common.nix { inherit pkgs; };
-        devcommands = pkgs.writeShellScriptBin "myrun" ''
+        runcommand = pkgs.writeShellScriptBin "myrun" ''
           #!${pkgs.bash}/bin/bash
           python -m drawiterm $*
+        '';
+        releasecommand = pkgs.writeShellScriptBin "myrelease" ''
+          #!${pkgs.bash}/bin/bash
+          python -m scripts/bump_version $*
         '';
       in 
       {
         devShells.default = pkgs.mkShell {
           packages = common.myBuildPackages ++ common.myDevPackages;
-          buildInputs = [ devcommands ];
+          buildInputs = [ runcommand releasecommand ];
 
           shellHook = ''
             # so running the python module runs correctly

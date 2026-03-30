@@ -9,6 +9,9 @@
       ps.textual
       ps.rich
       ps.pytest
+
+      ps.build
+      ps.twine
     ]))
   ];
   

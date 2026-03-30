@@ -38,10 +38,7 @@ class StatusBar(Static):
             if selection_count == 0:
                 hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/D/A/L/T=tool"
             else:
-                hint = (
-                    f"{selection_count} selected  "
-                    "Del=delete  Ctrl+D=duplicate  Arrow=nudge  "
-                )
+                hint = f"{selection_count} selected  Del=delete  Ctrl+D=duplicate  Arrow=nudge  "
                 if has_arrow_or_line_selected:
                     hint += "Shift+Tab=toggle-arrow/line  "
                 hint += "Enter/F2=edit  Esc=deselect"

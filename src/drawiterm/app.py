@@ -12,7 +12,7 @@ from textual.widgets import Input, Label
 
 from .commands import UndoStack
 from .file_io import load, save
-from .models import Document, ArrowElement
+from .models import ArrowElement, Document
 from .tool_controller import Tool, ToolController
 from .widgets.canvas import CanvasWidget
 from .widgets.statusbar import StatusBar

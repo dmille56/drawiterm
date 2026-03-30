@@ -1,3 +1,5 @@
+[![CI](https://github.com/dmille56/drawiterm/actions/workflows/ci.yml/badge.svg)](https://github.com/dmille56/drawiterm/actions/workflows/ci.yml)
+
 # drawiterm
 
 > Excalidraw-style system design sketching tool for the terminal

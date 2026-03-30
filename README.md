@@ -97,6 +97,9 @@ nix develop
 export PYTHONPATH=src
 ```
 
+### Install pre-commit hooks
+`pre-commit install`
+
 ### Commands
 ```bash
 python -m drawiterm # run from source

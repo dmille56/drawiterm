@@ -19,7 +19,7 @@
         '';
         releasecommand = pkgs.writeShellScriptBin "myrelease" ''
           #!${pkgs.bash}/bin/bash
-          python -m scripts/bump_version $*
+          python scripts/bump_version.py $*
         '';
       in 
       {

@@ -26,6 +26,7 @@ class StatusBar(Static):
         is_editing: bool = False,
         can_undo: bool = False,
         can_redo: bool = False,
+        has_arrow_or_line_selected: bool = False,
     ) -> None:
         dirty_flag = "*" if dirty else ""
         name = f"{filename}{dirty_flag}"
@@ -40,8 +41,10 @@ class StatusBar(Static):
                 hint = (
                     f"{selection_count} selected  "
                     "Del=delete  Ctrl+D=duplicate  Arrow=nudge  "
-                    "Tab=toggle-arrow  Enter/F2=edit  Esc=deselect"
                 )
+                if has_arrow_or_line_selected:
+                    hint += "Shift+Tab=toggle-arrow/line  "
+                hint += "Enter/F2=edit  Esc=deselect"
         elif tool == "rect":
             hint = "Drag to draw rect  S/Esc=cancel"
         elif tool == "ellipse":
@@ -51,7 +54,7 @@ class StatusBar(Static):
         elif tool == "arrow":
             hint = "Drag to draw arrow  S/Esc=cancel"
         elif tool == "line":
-            hint = "Drag to draw line  Tab=toggle-straight  S/Esc=cancel"
+            hint = "Drag to draw line  S/Esc=cancel"
         elif tool == "text":
             hint = "Click to place text  S/Esc=cancel"
         else:

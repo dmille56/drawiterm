@@ -12,7 +12,7 @@ from textual.widgets import Input, Label
 
 from .commands import UndoStack
 from .file_io import load, save
-from .models import Document
+from .models import Document, ArrowElement
 from .tool_controller import Tool, ToolController
 from .widgets.canvas import CanvasWidget
 from .widgets.statusbar import StatusBar
@@ -130,16 +130,22 @@ class DrawitermApp(App):
         canvas = self._canvas()
         col, row = canvas.cursor_canvas_pos
         filename = str(self._filepath) if self._filepath else "Untitled"
+        sel_ids = canvas.selection.selected_ids
+        has_arrow_or_line = any(
+            isinstance(self.document.get_by_id(eid), ArrowElement) for eid in sel_ids
+        )
+
         self._statusbar().update_status(
             TOOL_NAME_MAP.get(self.tool_ctrl.current_tool, "select"),
             col,
             row,
             filename,
             self._dirty,
-            selection_count=len(canvas.selection.selected_ids),
+            selection_count=len(sel_ids),
             is_editing=self.tool_ctrl.is_editing,
             can_undo=self.undo_stack.can_undo,
             can_redo=self.undo_stack.can_redo,
+            has_arrow_or_line_selected=has_arrow_or_line,
         )
 
     @on(CanvasWidget.StatusChanged)

@@ -108,7 +108,7 @@ def update_nix_version(new_version: str) -> None:
     text = NIX_FILE.read_text(encoding="utf-8")
     new_text, n = re.subn(
         r'(?m)^(\s*version\s*=\s*")([^"]*)(";\s*)$',
-        rf'\1{new_version}\3',
+        lambda m: f"{m.group(1)}{new_version}{m.group(3)}",
         text,
         count=1,
     )

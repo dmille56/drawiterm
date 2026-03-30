@@ -129,7 +129,10 @@ def main() -> None:
     ap.add_argument(
         "--pre",
         choices=("a", "b", "rc"),
-        help="Start or increment a pre-release (a/b/rc). For patch: increments same kind if present.",
+        help=(
+            "Start or increment a pre-release (a/b/rc). "
+            "For patch: increments same kind if present."
+        ),
     )
     ap.add_argument("--finalize", action="store_true", help="Drop any pre-release (no other bump).")
     ap.add_argument("--no-commit", action="store_true", help="Do not create a commit.")

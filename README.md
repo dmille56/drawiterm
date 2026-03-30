@@ -17,6 +17,12 @@ Draw boxes, arrows, and labels directly in your terminal using keyboard and mous
 
 ## Installation
 
+### With pipx (recommended)
+
+```bash
+pipx install drawiterm
+```
+
 ### With Nix
 
 ```bash
@@ -27,12 +33,6 @@ Or enter a dev shell:
 
 ```bash
 nix develop
-```
-
-### With pipx (recommended)
-
-```bash
-pipx install drawiterm
 ```
 
 ### With pip
@@ -105,6 +105,11 @@ See [SPEC.md](SPEC.md) for the full requirements specification.
 
 ## Release process
 
+### Automatically
+`python scripts/bump_version.py`
+
+### -or- Manually
+
 - Bump the version in pyproject.toml and nix/drawiterm.nix (no leading "v" in the file values).
 - Commit, then tag and push (tag must be v<version> and match pyproject.toml):
 
@@ -113,5 +118,6 @@ git tag -a "v0.1.0b1" -m "v0.1.0b1"
 git push origin v0.1.0b1
 ```
 
+### Other
 The GitHub Actions "Release" workflow will lint, test, build, and create a GitHub Release.
 If you add a repository secret PYPI_API_TOKEN (from PyPI), it will also publish to PyPI.

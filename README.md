@@ -1,4 +1,5 @@
 [![CI](https://github.com/dmille56/drawiterm/actions/workflows/ci.yml/badge.svg)](https://github.com/dmille56/drawiterm/actions/workflows/ci.yml)
+[![Release](https://github.com/dmille56/drawiterm/actions/workflows/release.yml/badge.svg)](https://github.com/dmille56/drawiterm/actions/workflows/release.yml)
 
 # drawiterm
 

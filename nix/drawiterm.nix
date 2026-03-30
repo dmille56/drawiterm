@@ -5,7 +5,7 @@ let
 in
 pkgs.python3Packages.buildPythonPackage rec {
   pname = "drawiterm";
-  version = "0.1.0-beta";
+  version = "0.1.0b1";
  
   # source: use the current directory
   src = ../.;

@@ -105,8 +105,13 @@ See [SPEC.md](SPEC.md) for the full requirements specification.
 
 ## Release process
 
-Update version number (without the preceding v) in pyproject.toml and nix/drawiterm.nix then (replacing v.0.1.0-beta with the release number):
+- Bump the version in pyproject.toml and nix/drawiterm.nix (no leading "v" in the file values).
+- Commit, then tag and push (tag must be v<version> and match pyproject.toml):
+
 ```bash
-git tag -a "v0.1.0-beta" -m "release v0.1.0-beta"
-git push origin v0.1.0-beta
+git tag -a "v0.1.0b1" -m "v0.1.0b1"
+git push origin v0.1.0b1
 ```
+
+The GitHub Actions "Release" workflow will lint, test, build, and create a GitHub Release.
+If you add a repository secret PYPI_API_TOKEN (from PyPI), it will also publish to PyPI.

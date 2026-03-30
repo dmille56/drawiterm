@@ -51,6 +51,12 @@ jobs:
       - name: Build sdist and wheel
         run: python -m build
 
+      - name: Publish to PyPI
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: pypa/gh-action-pypi-publish@v1.10.1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

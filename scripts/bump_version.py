@@ -4,9 +4,8 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
-from pathlib import Path
-
 import tomllib  # Python 3.11+
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"

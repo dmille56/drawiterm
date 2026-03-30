@@ -82,12 +82,23 @@ Diagrams are saved as `.drawiterm` JSON files — human-readable and version-con
 
 ## Development
 
+### Setup lorri (and use it)
+- https://github.com/nix-community/lorri
+- Make sure to run lorri daemon as a service
+
 ```bash
+lorri init
 direnv allow        # activate Nix shell (sets PYTHONPATH=src automatically)
-# or manually:
+```
+
+### --or-- Manually use nix development shell:
+```bash
 nix develop
 export PYTHONPATH=src
+```
 
+### Commands
+```bash
 python -m drawiterm # run from source
 
 ruff check src/     # lint
@@ -102,7 +113,7 @@ See [SPEC.md](SPEC.md) for the full requirements specification.
 ### Automatically
 `python scripts/bump_version.py`
 
-### -or- Manually
+### --or-- Manually
 
 - Bump the version in pyproject.toml and nix/drawiterm.nix (no leading "v" in the file values).
 - Commit, then tag and push (tag must be v<version> and match pyproject.toml):

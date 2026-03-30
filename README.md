@@ -102,3 +102,11 @@ pytest              # tests
 ```
 
 See [SPEC.md](SPEC.md) for the full requirements specification.
+
+## Release process
+
+Update version number (without the preceding v) in pyproject.toml and nix/drawiterm.nix then (replacing v.0.1.0-beta with the release number):
+```bash
+git tag -a "v0.1.0-beta" -m "release v0.1.0-beta"
+git push origin v0.1.0-beta
+```

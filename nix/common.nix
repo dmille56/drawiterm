@@ -22,5 +22,6 @@
 
     pkgs.ruff
     pkgs.ty
+    pkgs.pre-commit
   ];
 }

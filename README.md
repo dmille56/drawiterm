@@ -29,12 +29,6 @@ pipx install drawiterm
 nix run github:dmille56/drawiterm
 ```
 
-Or enter a dev shell:
-
-```bash
-nix develop
-```
-
 ### With pip
 
 ```bash

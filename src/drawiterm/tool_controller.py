@@ -39,6 +39,7 @@ class Tool(Enum):
     DIAMOND = auto()
     ARROW = auto()
     LINE = auto()
+    ERASER = auto()
     TEXT = auto()
 
 
@@ -75,6 +76,11 @@ class ToolController:
     _drag_total_dc: int = 0
     _drag_total_dr: int = 0
     tool_lock: bool = False
+
+    # Eraser tool state
+    _erasing: bool = False
+    _erased_ids: set[int] = field(default_factory=set)
+    _erased_elements: list[Element] = field(default_factory=list)
 
     _rubber_banding: bool = False
     _rubber_start_col: int = 0
@@ -151,6 +157,13 @@ class ToolController:
                 self.set_tool(Tool.SELECT)
             return True
 
+        if self.current_tool == Tool.ERASER:
+            self._erasing = True
+            self._erased_ids.clear()
+            self._erased_elements.clear()
+            self._erase_at(col, row, document, selection)
+            return True
+
         if self.current_tool == Tool.SELECT:
             # Check for resize handle first
             handle, eid = _find_resize_handle(col, row, selection, document)
@@ -209,6 +222,10 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
+        if self._erasing and button == 1:
+            self._erase_at(col, row, document, selection)
+            return True
+
         if self._drawing and button == 1:
             self._draw_cur_col = col
             self._draw_cur_row = row
@@ -576,6 +593,28 @@ class ToolController:
 
         # Apply text change live (will be committed on Escape/Enter)
         _set_edit_text(el, text)
+        return True
+
+    def _erase_at(
+        self,
+        col: int,
+        row: int,
+        document: Document,
+        selection: SelectionState,
+    ) -> bool:
+        hits = document.get_at(col, row)
+        if not hits:
+            return False
+        top = hits[-1]
+        if top.id in self._erased_ids:
+            return False
+        removed = document.remove(top.id)
+        if removed is None:
+            return False
+        self._erased_ids.add(top.id)
+        self._erased_elements.append(removed)
+        if top.id in selection.selected_ids:
+            selection.selected_ids.discard(top.id)
         return True
 
     def _cancel_draw(self) -> None:

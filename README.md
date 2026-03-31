@@ -55,6 +55,7 @@ drawiterm mydiagram.drawiterm   # open existing file
 | `d` | Diamond |
 | `a` | Arrow |
 | `l` | Line |
+| `x` | Eraser |
 | `t` | Text |
 
 Arrows and Lines are orthogonal by default; use Shift+Tab to toggle to straight.

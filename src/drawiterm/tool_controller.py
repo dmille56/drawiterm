@@ -74,6 +74,7 @@ class ToolController:
     _drag_move_last_row: int = 0
     _drag_total_dc: int = 0
     _drag_total_dr: int = 0
+    tool_lock: bool = False
 
     _rubber_banding: bool = False
     _rubber_start_col: int = 0
@@ -145,6 +146,9 @@ class ToolController:
             selection.selected_ids = {eid}
             self._editing_element_id = eid
             self._edit_cursor = 0
+            # Auto-switch back to Select unless tool lock is enabled
+            if not self.tool_lock:
+                self.set_tool(Tool.SELECT)
             return True
 
         if self.current_tool == Tool.SELECT:
@@ -330,6 +334,10 @@ class ToolController:
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
+            # Auto-switch back to Select unless tool lock is enabled
+            if not self.tool_lock:
+                self.set_tool(Tool.SELECT)
+                preview.element = None
             return True
 
         if self._drag_moving:

@@ -77,6 +77,7 @@ class DrawitermApp(App):
             show=False,
             priority=True,
         ),
+        Binding("ctrl+l", "toggle_tool_lock", "Lock Tool", show=False),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
         Binding("ctrl+up", "pan_up", "Pan Up", show=False),
         Binding("ctrl+down", "pan_down", "Pan Down", show=False),
@@ -177,6 +178,8 @@ class DrawitermApp(App):
     @on(CanvasWidget.StatusChanged)
     def _on_canvas_status_changed(self) -> None:
         self._update_status()
+        # Keep toolbar in sync with programmatic tool changes
+        self._toolbar().set_active(TOOL_NAME_MAP.get(self.tool_ctrl.current_tool, "select"))
 
     @on(ToolBar.ToolSelected)
     def _on_tool_selected(self, event: ToolBar.ToolSelected) -> None:
@@ -297,6 +300,12 @@ class DrawitermApp(App):
 
     def action_pan_right(self) -> None:
         self._canvas().pan(5, 0)
+
+    def action_toggle_tool_lock(self) -> None:
+        self.tool_ctrl.tool_lock = not self.tool_ctrl.tool_lock
+        state = "ON" if self.tool_ctrl.tool_lock else "OFF"
+        self.notify(f"Tool lock: {state}", severity="information")
+        self._update_status()
 
     # ------------------------------------------------------------------
     # Dialogs

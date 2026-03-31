@@ -58,6 +58,7 @@ drawiterm mydiagram.drawiterm   # open existing file
 | `t` | Text |
 
 Arrows and Lines are orthogonal by default; use Shift+Tab to toggle to straight.
+When tool lock is OFF, the app switches back to Select after using a tool; press Ctrl+L to toggle tool lock.
 
 ## Key Bindings
 
@@ -73,6 +74,7 @@ Arrows and Lines are orthogonal by default; use Shift+Tab to toggle to straight.
 | Arrow keys | Nudge selected elements |
 | `Tab` | Next tool |
 | `Shift+Tab` | Toggle arrow/line style (straight/orthogonal) |
+| `Ctrl+L` | Toggle tool lock (keep active tool after use) |
 | `Ctrl+Arrow` | Pan canvas |
 | `Ctrl+Left-drag` | Pan canvas |
 | `Ctrl+Q` | Quit |

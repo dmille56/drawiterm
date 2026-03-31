@@ -114,6 +114,9 @@ class CanvasWidget(Widget):
         self.selection.cursor_col = self._last_mouse_col
         self.selection.cursor_row = self._last_mouse_row
         self.preview.tool_name = self.tool_ctrl.current_tool.name.lower()
+        if self.preview.tool_name not in ("arrow", "line"):
+            self.preview.snap_anchor = None
+            self.selection.hover_anchor = None
 
         # Reuse the grid buffer; reallocate only when dimensions change
         if self._grid is None or len(self._grid) != rows or len(self._grid[0]) != cols:

@@ -134,6 +134,7 @@ class DrawitermApp(App):
         has_arrow_or_line = any(
             isinstance(self.document.get_by_id(eid), ArrowElement) for eid in sel_ids
         )
+        anchor_hint = self._anchor_hint(sel_ids) if has_arrow_or_line else None
 
         self._statusbar().update_status(
             TOOL_NAME_MAP.get(self.tool_ctrl.current_tool, "select"),
@@ -146,7 +147,32 @@ class DrawitermApp(App):
             can_undo=self.undo_stack.can_undo,
             can_redo=self.undo_stack.can_redo,
             has_arrow_or_line_selected=has_arrow_or_line,
+            anchor_hint=anchor_hint,
         )
+
+    def _anchor_hint(self, sel_ids: set[int]) -> str | None:
+        def describe(element_id: int | None, anchor_name: str | None) -> str | None:
+            if element_id is None or anchor_name is None:
+                return None
+            target = self.document.get_by_id(element_id)
+            if target is None:
+                return None
+            label = target.label or target.element_type
+            return f"{label}:{anchor_name}"
+
+        for eid in sel_ids:
+            el = self.document.get_by_id(eid)
+            if not isinstance(el, ArrowElement):
+                continue
+            start = describe(el.start_element_id, el.start_anchor)
+            end = describe(el.end_element_id, el.end_anchor)
+            if start and end:
+                return f"{start} ↔ {end}"
+            if start:
+                return start
+            if end:
+                return end
+        return None
 
     @on(CanvasWidget.StatusChanged)
     def _on_canvas_status_changed(self) -> None:

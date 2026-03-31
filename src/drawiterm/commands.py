@@ -64,14 +64,14 @@ class MoveElementsCommand:
             e = document.get_by_id(eid)
             if e is None:
                 continue
-            _apply_move(e, dc, dr)
+            _apply_move(e, dc, dr, document)
 
     def undo(self, document: Document) -> None:
         for eid, dc, dr in self.moves:
             e = document.get_by_id(eid)
             if e is None:
                 continue
-            _apply_move(e, -dc, -dr)
+            _apply_move(e, -dc, -dr, document)
 
 
 @dataclass
@@ -89,12 +89,26 @@ class ResizeElementCommand:
     def execute(self, document: Document) -> None:
         e = document.get_by_id(self.element_id)
         if e is not None:
-            _apply_geometry(e, self.new_col, self.new_row, self.new_width, self.new_height)
+            _apply_geometry(
+                e,
+                self.new_col,
+                self.new_row,
+                self.new_width,
+                self.new_height,
+                document,
+            )
 
     def undo(self, document: Document) -> None:
         e = document.get_by_id(self.element_id)
         if e is not None:
-            _apply_geometry(e, self.old_col, self.old_row, self.old_width, self.old_height)
+            _apply_geometry(
+                e,
+                self.old_col,
+                self.old_row,
+                self.old_width,
+                self.old_height,
+                document,
+            )
 
 
 @dataclass
@@ -120,7 +134,12 @@ class EditTextCommand:
 # ---------------------------------------------------------------------------
 
 
-def _apply_move(element: Element, dc: int, dr: int) -> None:
+def _apply_move(
+    element: Element,
+    dc: int,
+    dr: int,
+    document: Document | None = None,
+) -> None:
     from .models import (
         ArrowElement,
         DiamondElement,
@@ -132,6 +151,8 @@ def _apply_move(element: Element, dc: int, dr: int) -> None:
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
         element.col += dc
         element.row += dr
+        if document is not None:
+            document.reroute_arrows_for_element(element.id)
     elif isinstance(element, TextElement):
         element.col += dc
         element.row += dr
@@ -142,7 +163,14 @@ def _apply_move(element: Element, dc: int, dr: int) -> None:
         element.end_row += dr
 
 
-def _apply_geometry(element: Element, col: int, row: int, width: int, height: int) -> None:
+def _apply_geometry(
+    element: Element,
+    col: int,
+    row: int,
+    width: int,
+    height: int,
+    document: Document | None = None,
+) -> None:
     from .models import DiamondElement, EllipseElement, RectElement
 
     if isinstance(element, (RectElement, EllipseElement, DiamondElement)):
@@ -150,6 +178,8 @@ def _apply_geometry(element: Element, col: int, row: int, width: int, height: in
         element.row = row
         element.width = width
         element.height = height
+        if document is not None:
+            document.reroute_arrows_for_element(element.id)
 
 
 def _set_text(element: Element, text: str, is_label: bool) -> None:
@@ -236,6 +266,10 @@ def _clone_element(el: Element, new_id: int, dc: int, dr: int) -> Element:
             end_row=el.end_row + dr,
             arrow_style=el.arrow_style,
             show_arrowhead=el.show_arrowhead,
+            start_element_id=el.start_element_id,
+            end_element_id=el.end_element_id,
+            start_anchor=el.start_anchor,
+            end_anchor=el.end_anchor,
             label=el.label,
             style=style,
         )

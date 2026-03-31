@@ -16,6 +16,7 @@ from .commands import (
     UndoStack,
 )
 from .models import (
+    AnchorPoint,
     ArrowElement,
     DiamondElement,
     Document,
@@ -23,6 +24,7 @@ from .models import (
     EllipseElement,
     RectElement,
     TextElement,
+    find_anchor_near,
 )
 from .painter import SelectionState, ToolPreviewState
 
@@ -63,9 +65,8 @@ class ToolController:
     _draw_cur_col: int = 0
     _draw_cur_row: int = 0
 
-    # Arrow snap: element id or None
-    _arrow_snap_start_id: int | None = None
-    _arrow_snap_end_id: int | None = None
+    # Arrow snap: start anchor info
+    _arrow_snap_start_anchor: AnchorPoint | None = None
 
     # Select tool state
     _drag_moving: bool = False
@@ -94,6 +95,7 @@ class ToolController:
 
     def set_tool(self, tool: Tool) -> None:
         self._cancel_draw()
+        self._clear_anchor_snap()
         self.current_tool = tool
 
     # ------------------------------------------------------------------
@@ -122,8 +124,15 @@ class ToolController:
             self._draw_start_row = row
             self._draw_cur_col = col
             self._draw_cur_row = row
+            self._clear_anchor_snap()
             if self.current_tool in (Tool.ARROW, Tool.LINE):
-                self._arrow_snap_start_id = _snap_to_shape(col, row, document)
+                anchor = find_anchor_near(document, col, row)
+                if anchor is not None:
+                    self._draw_start_col = anchor.col
+                    self._draw_start_row = anchor.row
+                    self._draw_cur_col = anchor.col
+                    self._draw_cur_row = anchor.row
+                self._arrow_snap_start_anchor = anchor
             _update_preview(self, document, preview)
             return True
 
@@ -172,8 +181,18 @@ class ToolController:
                 self._rubber_start_col = col
                 self._rubber_start_row = row
                 selection.rubber_band = (col, row, 0, 0)
-                return True
+        return True
 
+        anchor = find_anchor_near(document, col, row)
+        preview.snap_anchor = anchor
+        if anchor is None:
+            if selection.hover_anchor is not None:
+                selection.hover_anchor = None
+                return True
+        else:
+            if anchor != selection.hover_anchor:
+                selection.hover_anchor = anchor
+                return True
         return False
 
     def on_mouse_move(
@@ -189,6 +208,17 @@ class ToolController:
         if self._drawing and button == 1:
             self._draw_cur_col = col
             self._draw_cur_row = row
+            anchor = find_anchor_near(document, col, row)
+            if anchor is None and selection.hover_anchor is not None:
+                selection.hover_anchor = None
+            elif anchor is not None and anchor != selection.hover_anchor:
+                selection.hover_anchor = anchor
+            if anchor is not None:
+                preview.snap_anchor = anchor
+            elif self.current_tool in (Tool.ARROW, Tool.LINE):
+                preview.snap_anchor = self._arrow_snap_start_anchor
+            else:
+                preview.snap_anchor = None
             _update_preview(self, document, preview)
             return True
 
@@ -203,7 +233,7 @@ class ToolController:
                     if el is not None:
                         from .commands import _apply_move
 
-                        _apply_move(el, dc2, dr2)
+                        _apply_move(el, dc2, dr2, document)
                 self._drag_move_last_col = col
                 self._drag_move_last_row = row
                 self._drag_total_dc += dc
@@ -271,19 +301,32 @@ class ToolController:
                 selection.selected_ids = {eid}
 
             elif self.current_tool in (Tool.ARROW, Tool.LINE):
-                snap_end = _snap_to_shape(col, row, document)
+                end_anchor = find_anchor_near(document, col, row)
+                start_col = sc
+                start_row = sr
+                end_col = end_anchor.col if end_anchor else ec
+                end_row = end_anchor.row if end_anchor else er
                 el = ArrowElement(
                     id=eid,
                     z_order=eid,
-                    start_col=sc,
-                    start_row=sr,
-                    end_col=ec,
-                    end_row=er,
+                    start_col=start_col,
+                    start_row=start_row,
+                    end_col=end_col,
+                    end_row=end_row,
                     arrow_style="orthogonal",
                     show_arrowhead=(self.current_tool == Tool.ARROW),
-                    start_element_id=self._arrow_snap_start_id,
-                    end_element_id=snap_end,
+                    start_element_id=self._arrow_snap_start_anchor.element_id
+                    if self._arrow_snap_start_anchor
+                    else None,
+                    end_element_id=end_anchor.element_id if end_anchor else None,
+                    start_anchor=self._arrow_snap_start_anchor.name
+                    if self._arrow_snap_start_anchor
+                    else None,
+                    end_anchor=end_anchor.name if end_anchor else None,
                 )
+                if self._arrow_snap_start_anchor is not None:
+                    self._arrow_snap_start_anchor = None
+                preview.snap_anchor = None
                 undo_stack.push(AddElementCommand(el), document)
                 selection.selected_ids = {eid}
 
@@ -301,7 +344,7 @@ class ToolController:
                     if el is not None:
                         from .commands import _apply_move
 
-                        _apply_move(el, -total_dc, -total_dr)
+                        _apply_move(el, -total_dc, -total_dr, document)
                 moves = [(eid, total_dc, total_dr) for eid in selection.selected_ids]
                 undo_stack.push(MoveElementsCommand(moves), document)
             return True
@@ -529,6 +572,10 @@ class ToolController:
 
     def _cancel_draw(self) -> None:
         self._drawing = False
+        self._clear_anchor_snap()
+
+    def _clear_anchor_snap(self) -> None:
+        self._arrow_snap_start_anchor = None
 
     @property
     def is_editing(self) -> bool:
@@ -553,6 +600,10 @@ def _update_preview(ctrl: ToolController, document: Document, preview: ToolPrevi
     ec, er = ctrl._draw_cur_col, ctrl._draw_cur_row
     c = min(sc, ec)
     r = min(sr, er)
+    if ctrl.current_tool in (Tool.ARROW, Tool.LINE):
+        preview.snap_anchor = ctrl._arrow_snap_start_anchor
+    else:
+        preview.snap_anchor = None
     w = max(abs(ec - sc) + 1, 3)
     h = max(abs(er - sr) + 1, 3)
 
@@ -585,23 +636,6 @@ def _update_preview(ctrl: ToolController, document: Document, preview: ToolPrevi
         )
     else:
         preview.element = None
-
-
-def _snap_to_shape(col: int, row: int, document: Document, radius: int = 1) -> int | None:
-    """Return element id if (col, row) is within radius of a shape's edge midpoint."""
-    for el in document.elements:
-        if isinstance(el, (RectElement, EllipseElement)):
-            c, r, w, h = el.bounding_box()
-            midpoints = [
-                (c + w // 2, r),  # top
-                (c + w // 2, r + h - 1),  # bottom
-                (c, r + h // 2),  # left
-                (c + w - 1, r + h // 2),  # right
-            ]
-            for mc, mr in midpoints:
-                if abs(col - mc) <= radius and abs(row - mr) <= radius:
-                    return el.id
-    return None
 
 
 def _find_resize_handle(
@@ -653,55 +687,41 @@ def _apply_resize_preview(
     dc = cur_col - start_col
     dr = cur_row - start_row
 
+    from .commands import _apply_geometry
+
     if handle == HANDLE_BR:
         new_w, new_h = max(3, ow + dc), max(3, oh + dr)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, oc, or_, new_w, new_h)
+        _apply_geometry(el, oc, or_, new_w, new_h, document)
     elif handle == HANDLE_TL:
         new_c = min(oc + ow - 3, oc + dc)
         new_r = min(or_ + oh - 3, or_ + dr)
         new_w = max(3, ow - dc)
         new_h = max(3, oh - dr)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, new_c, new_r, new_w, new_h)
+        _apply_geometry(el, new_c, new_r, new_w, new_h, document)
     elif handle == HANDLE_TR:
         new_r = min(or_ + oh - 3, or_ + dr)
         new_w = max(3, ow + dc)
         new_h = max(3, oh - dr)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, oc, new_r, new_w, new_h)
+        _apply_geometry(el, oc, new_r, new_w, new_h, document)
     elif handle == HANDLE_BL:
         new_c = min(oc + ow - 3, oc + dc)
         new_w = max(3, ow - dc)
         new_h = max(3, oh + dr)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, new_c, or_, new_w, new_h)
+        _apply_geometry(el, new_c, or_, new_w, new_h, document)
     elif handle == HANDLE_TM:
         new_r = min(or_ + oh - 3, or_ + dr)
         new_h = max(3, oh - dr)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, oc, new_r, ow, new_h)
+        _apply_geometry(el, oc, new_r, ow, new_h, document)
     elif handle == HANDLE_BM:
         new_h = max(3, oh + dr)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, oc, or_, ow, new_h)
+        _apply_geometry(el, oc, or_, ow, new_h, document)
     elif handle == HANDLE_ML:
         new_c = min(oc + ow - 3, oc + dc)
         new_w = max(3, ow - dc)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, new_c, or_, new_w, oh)
+        _apply_geometry(el, new_c, or_, new_w, oh, document)
     elif handle == HANDLE_MR:
         new_w = max(3, ow + dc)
-        from .commands import _apply_geometry
-
-        _apply_geometry(el, oc, or_, new_w, oh)
+        _apply_geometry(el, oc, or_, new_w, oh, document)
 
 
 def _get_edit_text(el: Element) -> str:

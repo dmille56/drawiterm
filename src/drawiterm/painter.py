@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from rich.style import Style
 
 from .models import (
+    AnchorPoint,
     ArrowElement,
     DiamondElement,
     Document,
@@ -15,6 +16,7 @@ from .models import (
     RectElement,
     TextElement,
     Viewport,
+    resolve_anchor_position,
 )
 
 # ---------------------------------------------------------------------------
@@ -136,6 +138,7 @@ class SelectionState:
     hovered_id: int | None = None  # element under the mouse cursor
     editing_id: int | None = None  # element currently being text-edited
     edit_cursor: int = 0  # byte offset of text cursor within edited text
+    hover_anchor: AnchorPoint | None = None
     cursor_col: int = -1  # canvas col of mouse cursor (-1 = unknown)
     cursor_row: int = -1  # canvas row of mouse cursor
 
@@ -146,6 +149,7 @@ class ToolPreviewState:
 
     element: Element | None = None  # provisional element not yet in Document
     tool_name: str = "select"  # current tool, for cursor-shape rendering
+    snap_anchor: AnchorPoint | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -205,10 +209,14 @@ class CanvasPainter:
 
         # Hover highlight (dim yellow outline on element under cursor)
         _paint_hover_highlight(grid, selection, document, viewport)
+        if selection.hover_anchor is not None:
+            _paint_anchor_marker(grid, selection.hover_anchor, viewport, _STYLE_HOVER)
 
         # Paint ghost preview
         if preview.element is not None:
             _paint_element(grid, preview.element, viewport, _STYLE_GHOST)
+        if preview.snap_anchor is not None:
+            _paint_anchor_marker(grid, preview.snap_anchor, viewport, _STYLE_GHOST)
 
         # Paint rubber-band selection rect
         if selection.rubber_band is not None:
@@ -220,6 +228,7 @@ class CanvasPainter:
                 el = document.get_by_id(eid)
                 if el is not None:
                     _paint_selection_handles(grid, el, viewport, _STYLE_SEL)
+            _paint_connected_anchor_points(grid, document, selection, viewport)
 
         # Edit-mode indicator: bright-green border + text cursor
         _paint_edit_indicator(grid, selection, document, viewport)
@@ -703,6 +712,35 @@ def _paint_selection_handles(
     put(oc + ow // 2, or_ + oh - 1, "+")
     put(oc, or_ + oh // 2, "+")
     put(oc + ow - 1, or_ + oh // 2, "+")
+
+
+def _paint_anchor_marker(
+    grid: CellGrid,
+    anchor: AnchorPoint,
+    viewport: Viewport,
+    style: Style,
+) -> None:
+    tc, tr = viewport.to_terminal(anchor.col, anchor.row)
+    grid_set(grid, tc, tr, "•", style)
+
+
+def _paint_connected_anchor_points(
+    grid: CellGrid,
+    document: Document,
+    selection: SelectionState,
+    viewport: Viewport,
+) -> None:
+    for eid in selection.selected_ids:
+        el = document.get_by_id(eid)
+        if not isinstance(el, ArrowElement):
+            continue
+        for element_id, anchor_name in [
+            (el.start_element_id, el.start_anchor),
+            (el.end_element_id, el.end_anchor),
+        ]:
+            anchor = resolve_anchor_position(document, element_id, anchor_name)
+            if anchor is not None:
+                _paint_anchor_marker(grid, anchor, viewport, _STYLE_SEL)
 
 
 # ---------------------------------------------------------------------------

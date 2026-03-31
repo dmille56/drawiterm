@@ -13,6 +13,9 @@ CANVAS_WIDTH = 500
 CANVAS_HEIGHT = 200
 
 
+SCHEMA_VERSION = 2
+
+
 # ---------------------------------------------------------------------------
 # Styles
 # ---------------------------------------------------------------------------
@@ -36,6 +39,14 @@ class ElementStyle:
         )
 
 
+@dataclass(frozen=True)
+class AnchorPoint:
+    element_id: int
+    name: str
+    col: int
+    row: int
+
+
 # ---------------------------------------------------------------------------
 # Element base + subtypes
 # ---------------------------------------------------------------------------
@@ -56,6 +67,9 @@ class Element:
     def contains_point(self, col: int, row: int) -> bool:
         c, r, w, h = self.bounding_box()
         return c <= col < c + w and r <= row < r + h
+
+    def anchor_points(self) -> list[AnchorPoint]:
+        return []
 
     def to_dict(self) -> dict:
         raise NotImplementedError
@@ -87,6 +101,26 @@ class RectElement(Element):
 
     def bounding_box(self) -> tuple[int, int, int, int]:
         return self.col, self.row, self.width, self.height
+
+    def anchor_points(self) -> list[AnchorPoint]:
+        anchors: list[AnchorPoint] = []
+        c, r, w, h = self.col, self.row, self.width, self.height
+
+        def add(name: str, col: int, row: int) -> None:
+            anchors.append(AnchorPoint(self.id, name, col, row))
+
+        mid_x = c + max(0, w - 1) // 2
+        mid_y = r + max(0, h - 1) // 2
+
+        add("top", mid_x, r)
+        add("top-right", c + w - 1, r)
+        add("right", c + w - 1, mid_y)
+        add("bottom-right", c + w - 1, r + h - 1)
+        add("bottom", mid_x, r + h - 1)
+        add("bottom-left", c, r + h - 1)
+        add("left", c, mid_y)
+        add("top-left", c, r)
+        return anchors
 
     def to_dict(self) -> dict:
         return {
@@ -156,6 +190,18 @@ class EllipseElement(Element):
     def bounding_box(self) -> tuple[int, int, int, int]:
         return self.col, self.row, self.width, self.height
 
+    def anchor_points(self) -> list[AnchorPoint]:
+        anchors: list[AnchorPoint] = []
+        c, r, w, h = self.col, self.row, self.width, self.height
+        mid_x = c + max(0, w - 1) // 2
+        mid_y = r + max(0, h - 1) // 2
+
+        anchors.append(AnchorPoint(self.id, "top", mid_x, r))
+        anchors.append(AnchorPoint(self.id, "right", c + w - 1, mid_y))
+        anchors.append(AnchorPoint(self.id, "bottom", mid_x, r + h - 1))
+        anchors.append(AnchorPoint(self.id, "left", c, mid_y))
+        return anchors
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -194,6 +240,8 @@ class ArrowElement(Element):
     show_arrowhead: bool = True
     start_element_id: int | None = None
     end_element_id: int | None = None
+    start_anchor: str | None = None
+    end_anchor: str | None = None
 
     def bounding_box(self) -> tuple[int, int, int, int]:
         c = min(self.start_col, self.end_col)
@@ -230,6 +278,8 @@ class ArrowElement(Element):
             "show_arrowhead": self.show_arrowhead,
             "start_element_id": self.start_element_id,
             "end_element_id": self.end_element_id,
+            "start_anchor": self.start_anchor,
+            "end_anchor": self.end_anchor,
         }
 
     @staticmethod
@@ -247,6 +297,8 @@ class ArrowElement(Element):
             show_arrowhead=d.get("show_arrowhead", True),
             start_element_id=d.get("start_element_id"),
             end_element_id=d.get("end_element_id"),
+            start_anchor=d.get("start_anchor"),
+            end_anchor=d.get("end_anchor"),
         )
 
 
@@ -308,6 +360,19 @@ class DiamondElement(Element):
 
     def bounding_box(self) -> tuple[int, int, int, int]:
         return self.col, self.row, self.width, self.height
+
+    def anchor_points(self) -> list[AnchorPoint]:
+        anchors: list[AnchorPoint] = []
+        c, r, w, h = self.col, self.row, self.width, self.height
+        top = (c + w // 2, r)
+        right = (c + w - 1, r + h // 2)
+        bottom = (c + w // 2, r + h - 1)
+        left = (c, r + h // 2)
+        anchors.append(AnchorPoint(self.id, "top", *top))
+        anchors.append(AnchorPoint(self.id, "right", *right))
+        anchors.append(AnchorPoint(self.id, "bottom", *bottom))
+        anchors.append(AnchorPoint(self.id, "left", *left))
+        return anchors
 
     def to_dict(self) -> dict:
         return {
@@ -401,7 +466,7 @@ def _straight_arrow_cells(sc: int, sr: int, ec: int, er: int) -> list[tuple[int,
 
 @dataclass
 class Document:
-    schema_version: int = 1
+    schema_version: int = SCHEMA_VERSION
     title: str = "Untitled"
     elements: list[Element] = field(default_factory=list)
     _next_id: int = field(default=1, init=False, repr=False)
@@ -420,6 +485,7 @@ class Document:
         self._id_index = {e.id: e for e in self.elements}
         # Build z_order-sorted list for painter
         self._sorted_elements = sorted(self.elements, key=lambda e: e.z_order)
+        self.reroute_all_arrows()
 
     def next_id(self) -> int:
         nid = self._next_id
@@ -429,7 +495,9 @@ class Document:
     def add(self, element: Element) -> Element:
         self.elements.append(element)
         self._id_index[element.id] = element
-        bisect.insort(self._sorted_elements, element, key=lambda e: e.z_order)
+        z_orders = [el.z_order for el in self._sorted_elements]
+        idx = bisect.bisect_right(z_orders, element.z_order)
+        self._sorted_elements.insert(idx, element)
         return element
 
     def remove(self, element_id: int) -> Element | None:
@@ -465,7 +533,7 @@ class Document:
 
     def to_dict(self) -> dict:
         return {
-            "schema_version": self.schema_version,
+            "schema_version": SCHEMA_VERSION,
             "title": self.title,
             "elements": [e.to_dict() for e in self.elements],
         }
@@ -474,11 +542,72 @@ class Document:
     def from_dict(d: dict) -> "Document":
         elements = [Element.from_dict(ed) for ed in d.get("elements", [])]
         doc = Document(
-            schema_version=d.get("schema_version", 1),
+            schema_version=d.get("schema_version", SCHEMA_VERSION),
             title=d.get("title", "Untitled"),
             elements=elements,
         )
         return doc
+
+    def reroute_all_arrows(self) -> None:
+        for el in self.elements:
+            if isinstance(el, ArrowElement):
+                reroute_arrow(el, self)
+
+    def reroute_arrows_for_element(self, element_id: int) -> None:
+        for el in self.elements:
+            if not isinstance(el, ArrowElement):
+                continue
+            if el.start_element_id == element_id or el.end_element_id == element_id:
+                reroute_arrow(el, self)
+
+
+# ---------------------------------------------------------------------------
+# Anchor utilities
+# ---------------------------------------------------------------------------
+
+
+def resolve_anchor_position(
+    document: Document, element_id: int | None, anchor_name: str | None
+) -> AnchorPoint | None:
+    if element_id is None or anchor_name is None:
+        return None
+    element = document.get_by_id(element_id)
+    if element is None:
+        return None
+    for point in element.anchor_points():
+        if point.name == anchor_name:
+            return point
+    return None
+
+
+def reroute_arrow(arrow: ArrowElement, document: Document) -> None:
+    start_point = resolve_anchor_position(document, arrow.start_element_id, arrow.start_anchor)
+    if start_point is not None:
+        arrow.start_col = start_point.col
+        arrow.start_row = start_point.row
+    end_point = resolve_anchor_position(document, arrow.end_element_id, arrow.end_anchor)
+    if end_point is not None:
+        arrow.end_col = end_point.col
+        arrow.end_row = end_point.row
+
+
+def find_anchor_near(
+    document: Document,
+    col: int,
+    row: int,
+    radius: int = 1,
+) -> AnchorPoint | None:
+    best_anchor: AnchorPoint | None = None
+    best_distance = radius + 1
+    for element in document.elements:
+        for anchor in element.anchor_points():
+            dc = abs(col - anchor.col)
+            dr = abs(row - anchor.row)
+            distance = max(dc, dr)
+            if distance <= radius and distance < best_distance:
+                best_anchor = anchor
+                best_distance = distance
+    return best_anchor
 
 
 # ---------------------------------------------------------------------------

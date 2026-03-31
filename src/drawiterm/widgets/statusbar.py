@@ -27,6 +27,7 @@ class StatusBar(Static):
         can_undo: bool = False,
         can_redo: bool = False,
         has_arrow_or_line_selected: bool = False,
+        anchor_hint: str | None = None,
     ) -> None:
         dirty_flag = "*" if dirty else ""
         name = f"{filename}{dirty_flag}"
@@ -63,8 +64,9 @@ class StatusBar(Static):
         if can_redo:
             undo_indicator += " Ctrl+Y=redo"
 
+        anchor_text = f"Connected: {anchor_hint}  " if anchor_hint else ""
         self.update(
-            f" {tool.upper()}  {pos}  {name}  | {hint}{undo_indicator}  "
+            f" {tool.upper()}  {pos}  {name}  | {anchor_text}{hint}{undo_indicator}  "
             "Ctrl+O=open Ctrl+S=save "
             "Ctrl+Q=quit"
         )

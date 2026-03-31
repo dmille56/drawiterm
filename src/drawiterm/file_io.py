@@ -5,9 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .models import Document
-
-CURRENT_SCHEMA_VERSION = 1
+from .models import SCHEMA_VERSION, Document
 
 
 def save(document: Document, path: Path) -> None:
@@ -24,5 +22,11 @@ def load(path: Path) -> Document:
 
 def _migrate(data: dict, from_version: int) -> dict:
     """Apply forward migrations from from_version to CURRENT_SCHEMA_VERSION."""
-    # No migrations needed yet (only version 1 exists).
+    if from_version < SCHEMA_VERSION:
+        elements = data.get("elements", [])
+        for element in elements:
+            if element.get("element_type") == "arrow":
+                element.setdefault("start_anchor", None)
+                element.setdefault("end_anchor", None)
+        data["schema_version"] = SCHEMA_VERSION
     return data

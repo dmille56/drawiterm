@@ -294,6 +294,17 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
+        if self._erasing:
+            self._erasing = False
+            if self._erased_ids:
+                # Revert the live deletions and record a single undoable delete
+                for el in self._erased_elements:
+                    document.add(el)
+                undo_stack.push(DeleteElementsCommand(list(self._erased_ids)), document)
+                self._erased_ids.clear()
+                self._erased_elements.clear()
+            return True
+
         if self._drawing:
             self._drawing = False
             preview.element = None
@@ -463,6 +474,9 @@ class ToolController:
             return True
         if key == "t":
             self.set_tool(Tool.TEXT)
+            return True
+        if key == "x":
+            self.set_tool(Tool.ERASER)
             return True
         if key in ("s", "escape"):
             self.set_tool(Tool.SELECT)

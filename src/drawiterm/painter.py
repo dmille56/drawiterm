@@ -461,6 +461,7 @@ def _paint_diamond(
 # Freehand Path
 # ---------------------------------------------------------------------------
 
+
 def _paint_path(
     grid: CellGrid,
     el: PathElement,
@@ -482,6 +483,7 @@ def _paint_path(
     for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
         for px, py in _bresenham(x0, y0, x1, y1):
             put(px, py, "•")
+
 
 # ---------------------------------------------------------------------------
 # Arrow

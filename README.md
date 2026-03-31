@@ -55,10 +55,12 @@ drawiterm mydiagram.drawiterm   # open existing file
 | `d` | Diamond |
 | `a` | Arrow |
 | `l` | Line |
+| `p` | Draw (freehand) |
 | `x` | Eraser |
 | `t` | Text |
 
 Arrows and Lines are orthogonal by default; use Shift+Tab to toggle to straight.
+Use Draw (p) to sketch freehand paths by clicking and dragging.
 When tool lock is OFF, the app switches back to Select after using a tool; press Ctrl+L to toggle tool lock.
 
 ## Key Bindings

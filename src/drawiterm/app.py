@@ -25,6 +25,7 @@ TOOL_ID_MAP = {
     "diamond": Tool.DIAMOND,
     "arrow": Tool.ARROW,
     "line": Tool.LINE,
+    "draw": Tool.DRAW,
     "eraser": Tool.ERASER,
     "text": Tool.TEXT,
 }
@@ -250,6 +251,7 @@ class DrawitermApp(App):
             Tool.DIAMOND,
             Tool.ARROW,
             Tool.LINE,
+            Tool.DRAW,
             Tool.ERASER,
             Tool.TEXT,
         ]

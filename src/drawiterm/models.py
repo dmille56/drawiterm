@@ -87,6 +87,8 @@ class Element:
             return TextElement.from_dict(d)
         if t == "diamond":
             return DiamondElement.from_dict(d)
+        if t == "path":
+            return PathElement.from_dict(d)
         raise ValueError(f"Unknown element_type: {t!r}")
 
 
@@ -398,6 +400,53 @@ class DiamondElement(Element):
             row=d.get("row", 0),
             width=d.get("width", 10),
             height=d.get("height", 5),
+        )
+
+
+@dataclass
+class PathElement(Element):
+    element_type: str = field(default="path", init=False)
+    points: list[tuple[int, int]] = field(default_factory=list)
+
+    def bounding_box(self) -> tuple[int, int, int, int]:
+        if not self.points:
+            return (0, 0, 1, 1)
+        cols = [c for c, _ in self.points]
+        rows = [r for _, r in self.points]
+        min_c, max_c = min(cols), max(cols)
+        min_r, max_r = min(rows), max(rows)
+        return (min_c, min_r, max(1, max_c - min_c + 1), max(1, max_r - min_r + 1))
+
+    def contains_point(self, col: int, row: int) -> bool:
+        if not self.points:
+            return False
+        if len(self.points) == 1:
+            c0, r0 = self.points[0]
+            return c0 == col and r0 == row
+        for (c0, r0), (c1, r1) in zip(self.points, self.points[1:]):
+            for pc, pr in _straight_arrow_cells(c0, r0, c1, r1):
+                if pc == col and pr == row:
+                    return True
+        return False
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "element_type": self.element_type,
+            "z_order": self.z_order,
+            "label": self.label,
+            "style": self.style.to_dict(),
+            "points": self.points,
+        }
+
+    @staticmethod
+    def from_dict(d: dict) -> "PathElement":
+        return PathElement(
+            id=d["id"],
+            z_order=d.get("z_order", 0),
+            label=d.get("label", ""),
+            style=ElementStyle.from_dict(d.get("style", {})),
+            points=[tuple(p) for p in d.get("points", [])],
         )
 
 

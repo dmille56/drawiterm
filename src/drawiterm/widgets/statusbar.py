@@ -37,7 +37,7 @@ class StatusBar(Static):
             hint = "Esc=commit  Enter=newline(text)  ←→=cursor"
         elif tool == "select":
             if selection_count == 0:
-                hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/D/A/L/T/X=tool"
+                hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/D/A/L/T/X/P=tool"
             else:
                 hint = f"{selection_count} selected  Del=delete  Ctrl+D=duplicate  Arrow=nudge  "
                 if has_arrow_or_line_selected:
@@ -53,6 +53,8 @@ class StatusBar(Static):
             hint = "Drag to draw arrow  S/Esc=cancel"
         elif tool == "line":
             hint = "Drag to draw line  S/Esc=cancel"
+        elif tool == "draw":
+            hint = "Click/drag to draw freehand  S/Esc=cancel"
         elif tool == "eraser":
             hint = "Click/drag to erase  S/Esc=cancel"
         elif tool == "text":

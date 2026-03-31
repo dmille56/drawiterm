@@ -22,6 +22,7 @@ from .models import (
     Document,
     Element,
     EllipseElement,
+    PathElement,
     RectElement,
     TextElement,
     find_anchor_near,
@@ -39,6 +40,7 @@ class Tool(Enum):
     DIAMOND = auto()
     ARROW = auto()
     LINE = auto()
+    DRAW = auto()
     ERASER = auto()
     TEXT = auto()
 
@@ -82,6 +84,10 @@ class ToolController:
     _erased_ids: set[int] = field(default_factory=set)
     _erased_elements: list[Element] = field(default_factory=list)
 
+    # Draw (freehand) tool state
+    _freehanding: bool = False
+    _freehand_points: list[tuple[int, int]] = field(default_factory=list)
+
     _rubber_banding: bool = False
     _rubber_start_col: int = 0
     _rubber_start_row: int = 0
@@ -119,6 +125,12 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
+        if self.current_tool == Tool.DRAW:
+            self._freehanding = True
+            self._freehand_points = [(col, row)]
+            preview.element = PathElement(id=-1, z_order=99999, points=list(self._freehand_points))
+            return True
+
         if self.current_tool in (
             Tool.RECT,
             Tool.ELLIPSE,
@@ -222,6 +234,14 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
+        if self._freehanding and button == 1:
+            if not self._freehand_points or self._freehand_points[-1] != (col, row):
+                self._freehand_points.append((col, row))
+                preview.element = PathElement(
+                    id=-1, z_order=99999, points=list(self._freehand_points)
+                )
+            return True
+
         if self._erasing and button == 1:
             self._erase_at(col, row, document, selection)
             return True
@@ -294,6 +314,20 @@ class ToolController:
         selection: SelectionState,
         preview: ToolPreviewState,
     ) -> bool:
+        if self._freehanding:
+            self._freehanding = False
+            pts = list(self._freehand_points)
+            self._freehand_points.clear()
+            preview.element = None
+            if pts:
+                eid = document.next_id()
+                el = PathElement(id=eid, z_order=eid, points=pts)
+                undo_stack.push(AddElementCommand(el), document)
+                selection.selected_ids = {eid}
+                if not self.tool_lock:
+                    self.set_tool(Tool.SELECT)
+            return True
+
         if self._erasing:
             self._erasing = False
             if self._erased_ids:
@@ -472,6 +506,9 @@ class ToolController:
         if key == "l":
             self.set_tool(Tool.LINE)
             return True
+        if key == "p":
+            self.set_tool(Tool.DRAW)
+            return True
         if key == "t":
             self.set_tool(Tool.TEXT)
             return True
@@ -633,6 +670,8 @@ class ToolController:
 
     def _cancel_draw(self) -> None:
         self._drawing = False
+        self._freehanding = False
+        self._freehand_points.clear()
         self._clear_anchor_snap()
 
     def _clear_anchor_snap(self) -> None:

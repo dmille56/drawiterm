@@ -13,6 +13,7 @@ from .models import (
     Document,
     Element,
     EllipseElement,
+    PathElement,
     RectElement,
     TextElement,
     Viewport,
@@ -272,6 +273,8 @@ def _paint_element(
         _paint_ellipse(grid, element, viewport, override_style)
     elif isinstance(element, DiamondElement):
         _paint_diamond(grid, element, viewport, override_style)
+    elif isinstance(element, PathElement):
+        _paint_path(grid, element, viewport, override_style)
     elif isinstance(element, ArrowElement):
         _paint_arrow(grid, element, viewport, override_style)
     elif isinstance(element, TextElement):
@@ -453,6 +456,32 @@ def _paint_diamond(
         lr = r + h // 2 - lh // 2
         _paint_label_in_box(grid, el.label, lc, lr, lw, lh, viewport, base_style)
 
+
+# ---------------------------------------------------------------------------
+# Freehand Path
+# ---------------------------------------------------------------------------
+
+def _paint_path(
+    grid: CellGrid,
+    el: PathElement,
+    viewport: Viewport,
+    override_style: Style,
+) -> None:
+    base_style = override_style if override_style.color else _STYLE_WHITE
+
+    def put(cc: int, cr: int, ch: str) -> None:
+        tc, tr = viewport.to_terminal(cc, cr)
+        grid_set(grid, tc, tr, ch, base_style)
+
+    pts = el.points
+    if not pts:
+        return
+    if len(pts) == 1:
+        put(pts[0][0], pts[0][1], "•")
+        return
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        for px, py in _bresenham(x0, y0, x1, y1):
+            put(px, py, "•")
 
 # ---------------------------------------------------------------------------
 # Arrow

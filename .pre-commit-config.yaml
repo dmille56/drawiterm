@@ -23,5 +23,5 @@ repos:
           - pytest
           - "rich>=14.1.0"
           - "textual>=3.2.0"
-        stages: [commit]
+        stages: [pre-commit]
         require_serial: true

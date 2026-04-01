@@ -13,3 +13,15 @@ repos:
         args: ["format"]
         language: system
         types_or: [python]
+      - id: pytest
+        name: pytest
+        entry: pytest
+        language: python
+        language_version: python3.13
+        pass_filenames: false
+        additional_dependencies:
+          - pytest
+          - "rich>=14.1.0"
+          - "textual>=3.2.0"
+        stages: [commit]
+        require_serial: true

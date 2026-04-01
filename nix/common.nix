@@ -19,6 +19,7 @@
   myDevPackages = [
     pkgs.python3Packages.coverage
     pkgs.python3Packages.ipdb
+    pkgs.python3Packages.pytest-cov
 
     pkgs.ruff
     pkgs.ty

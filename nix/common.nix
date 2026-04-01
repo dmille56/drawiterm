@@ -25,5 +25,7 @@
     pkgs.ruff
     pkgs.ty
     pkgs.pre-commit
+
+    pkgs.asciinema # :NOTE: to record demos
   ];
 }

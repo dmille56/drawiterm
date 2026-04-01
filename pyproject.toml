@@ -38,10 +38,10 @@ dev = [
 drawiterm = "drawiterm.__main__:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "scripts"]
 
 [tool.setuptools]
-package-dir = { "" = "src" }
+package-dir = { "" = "src", "scripts" = "scripts" }
 
 [tool.ruff]
 target-version = "py312"

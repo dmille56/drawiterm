@@ -1,6 +1,3 @@
-from pathlib import Path
-from types import ModuleType
-
 from scripts import bump_version as bv
 
 

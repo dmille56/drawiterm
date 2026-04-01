@@ -1,5 +1,5 @@
-from drawiterm.painter import CanvasPainter, SelectionState, ToolPreviewState, make_grid
 from drawiterm.models import Document, RectElement, Viewport
+from drawiterm.painter import CanvasPainter, SelectionState, ToolPreviewState, make_grid
 
 
 def test_paint_rect_draws_corners():

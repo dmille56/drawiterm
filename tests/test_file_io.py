@@ -1,7 +1,7 @@
 import json
 
 from drawiterm.file_io import load, save
-from drawiterm.models import ArrowElement, Document, SCHEMA_VERSION, TextElement
+from drawiterm.models import SCHEMA_VERSION, ArrowElement, Document, TextElement
 
 
 def test_roundtrip_save_load(tmp_path):

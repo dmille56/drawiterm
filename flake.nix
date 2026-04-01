@@ -29,7 +29,7 @@
 
           shellHook = ''
             # so running the python module runs correctly
-            export PYTHONPATH="src"
+            export PYTHONPATH="src:."
           '';
         };
         

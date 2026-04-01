@@ -9,6 +9,7 @@
       ps.textual
       ps.rich
       ps.pytest
+      ps.pytest-cov
 
       ps.build
       ps.twine

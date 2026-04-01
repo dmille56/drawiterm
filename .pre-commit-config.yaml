@@ -16,6 +16,7 @@ repos:
       - id: pytest
         name: pytest
         entry: pytest
+        # :TODO: change this one day to just use the pyproject.toml dependencies (so we don't have to keep dependencies in sync everywhere)
         language: python
         language_version: python3.13
         pass_filenames: false
@@ -25,3 +26,4 @@ repos:
           - "textual>=3.2.0"
         stages: [pre-commit]
         require_serial: true
+        args: ["-q"]

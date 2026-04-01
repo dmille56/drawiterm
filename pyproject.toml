@@ -7,7 +7,8 @@ name = "drawiterm"
 version = "0.1.5"
 description = "Excalidraw-style system design sketching tool for the terminal"
 readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Donovan M" }]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -43,6 +44,7 @@ include = ["drawiterm*", "scripts*"]
 
 [tool.setuptools.package-dir]
 "" = "src"
+scripts = "scripts"
 
 [tool.ruff]
 target-version = "py312"

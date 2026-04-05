@@ -15,7 +15,7 @@ Draw boxes, arrows, and labels directly in your terminal using keyboard and mous
 
 ## Demo
 
-![Animation](https://i.postimg.cc/jjBRWTnb/demo-3.gif)
+![Animation](https://i.postimg.cc/SxzTSp4J/demo-3.gif)
 
 ## Requirements
 

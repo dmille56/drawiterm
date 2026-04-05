@@ -28,5 +28,6 @@
     pkgs.pre-commit
 
     pkgs.asciinema # :NOTE: to record demos
+    pkgs.asciinema-agg # :NOTE: to record demos
   ];
 }

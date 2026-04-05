@@ -36,6 +36,12 @@
         packages.default = import ./nix/drawiterm.nix { inherit pkgs; };
       };
 
+      flake = {
+        overlays.default = final: _prev: {
+          drawiterm = import ./nix/drawiterm.nix { pkgs = final; };
+        };
+      };
+
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
     };
 }

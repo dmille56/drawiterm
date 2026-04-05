@@ -21,6 +21,7 @@
     pkgs.python3Packages.coverage
     pkgs.python3Packages.ipdb
     pkgs.python3Packages.pytest-cov
+    pkgs.python3Packages.python-lsp-server
 
     pkgs.ruff
     pkgs.ty

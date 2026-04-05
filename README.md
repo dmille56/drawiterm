@@ -126,7 +126,7 @@ See [SPEC.md](SPEC.md) for the full requirements specification.
 ## Release process
 
 ### Automatically
-`python scripts/bump_version.py`--push
+`python scripts/bump_version.py --push`
 
 ### --or-- Manually
 

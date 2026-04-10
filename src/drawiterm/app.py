@@ -85,6 +85,7 @@ class DrawitermApp(App):
         Binding("ctrl+down", "pan_down", "Pan Down", show=False),
         Binding("ctrl+left", "pan_left", "Pan Left", show=False),
         Binding("ctrl+right", "pan_right", "Pan Right", show=False),
+        Binding("ctrl+g", "spawn_ghost", "Spawn Ghost", show=False),
     ]
 
     def __init__(self, filepath: Path | None = None) -> None:
@@ -213,6 +214,19 @@ class DrawitermApp(App):
             self._dirty = True
             self._update_status()
 
+        # Track ghost element position when it exists
+        self._track_ghost_position(canvas)
+
+    def _track_ghost_position(self, canvas: CanvasWidget) -> None:
+        """Move the ghost element to follow the mouse cursor."""
+        ghost = self.document.get_by_id(self.document._ghost_element_id)
+        if ghost is None:
+            return
+        col, row = canvas.cursor_canvas_pos
+        ghost.col = col
+        ghost.row = row
+        canvas.refresh()
+
     # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
@@ -286,6 +300,16 @@ class DrawitermApp(App):
         canvas.refresh()
         self._dirty = True
         self._update_status()
+
+    def action_spawn_ghost(self) -> None:
+        """Spawn a ghost element at the cursor position."""
+        canvas = self._canvas()
+        col, row = canvas.cursor_canvas_pos
+        self.document.spawn_ghost(col, row)
+        canvas.refresh()
+        self._dirty = True
+        self._update_status()
+        self.notify("👻 The ghost is watching you!", severity="info")
 
     def action_quit_app(self) -> None:
         if self._dirty:

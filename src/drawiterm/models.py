@@ -89,6 +89,8 @@ class Element:
             return DiamondElement.from_dict(d)
         if t == "path":
             return PathElement.from_dict(d)
+        if t == "ghost":
+            return GhostElement.from_dict(d)
         raise ValueError(f"Unknown element_type: {t!r}")
 
 
@@ -404,6 +406,47 @@ class DiamondElement(Element):
 
 
 @dataclass
+class GhostElement(Element):
+    """Easter egg ghost element that floats around the canvas."""
+
+    element_type: str = field(default="ghost", init=False)
+    col: int = 0
+    row: int = 0
+    text: str = "👻"
+    style: ElementStyle = field(default_factory=lambda: ElementStyle(fg_color="cyan", bold=True))
+
+    def bounding_box(self) -> tuple[int, int, int, int]:
+        return self.col, self.row, 1, 1
+
+    def contains_point(self, col: int, row: int) -> bool:
+        return col == self.col and row == self.row
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "element_type": self.element_type,
+            "z_order": self.z_order,
+            "label": self.label,
+            "style": self.style.to_dict(),
+            "col": self.col,
+            "row": self.row,
+            "text": self.text,
+        }
+
+    @staticmethod
+    def from_dict(d: dict) -> "GhostElement":
+        return GhostElement(
+            id=d["id"],
+            z_order=d.get("z_order", 0),
+            label=d.get("label", ""),
+            style=ElementStyle.from_dict(d.get("style", {})),
+            col=d.get("col", 0),
+            row=d.get("row", 0),
+            text=d.get("text", "👻"),
+        )
+
+
+@dataclass
 class PathElement(Element):
     element_type: str = field(default="path", init=False)
     points: list[tuple[int, int]] = field(default_factory=list)
@@ -525,6 +568,9 @@ class Document:
     _sorted_elements: list[Element] = field(
         default_factory=list, init=False, repr=False, compare=False
     )
+    _ghost_element_id: int | None = field(default=None, init=False, repr=False, compare=False)
+    _ghost_col: int = field(default=-1, init=False, repr=False, compare=False)
+    _ghost_row: int = field(default=-1, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         # Ensure _next_id is above any existing element ids
@@ -535,6 +581,45 @@ class Document:
         # Build z_order-sorted list for painter
         self._sorted_elements = sorted(self.elements, key=lambda e: e.z_order)
         self.reroute_all_arrows()
+
+    def spawn_ghost(self, col: int, row: int) -> None:
+        """Create and position a ghost element at given canvas coordinates."""
+        if self._ghost_element_id is not None:
+            # Remove old ghost if exists
+            ghost = self._id_index.get(self._ghost_element_id)
+            if ghost:
+                self.remove(self._ghost_element_id)
+        eid = self.next_id()
+        ghost = GhostElement(
+            id=eid,
+            z_order=eid,
+            col=col,
+            row=row,
+            text="👻",
+            style=ElementStyle(fg_color="cyan", bold=True),
+        )
+        self.add(ghost)
+        self._ghost_element_id = eid
+        self._ghost_col = col
+        self._ghost_row = row
+
+    def remove_ghost(self) -> bool:
+        """Remove the ghost element if it exists."""
+        if self._ghost_element_id is None:
+            return False
+        el = self.remove(self._ghost_element_id)
+        if el is not None and isinstance(el, GhostElement):
+            self._ghost_element_id = None
+        return True
+
+    def update_ghost_position(self, col: int, row: int) -> None:
+        """Move the ghost to new canvas coordinates."""
+        if self._ghost_element_id is None:
+            return
+        ghost = self._id_index.get(self._ghost_element_id)
+        if ghost:
+            ghost.col = col
+            ghost.row = row
 
     def next_id(self) -> int:
         nid = self._next_id
@@ -581,11 +666,17 @@ class Document:
         return result
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "schema_version": SCHEMA_VERSION,
             "title": self.title,
             "elements": [e.to_dict() for e in self.elements],
         }
+        # Save ghost element if it exists
+        if self._ghost_element_id is not None:
+            ghost = self.get_by_id(self._ghost_element_id)
+            if ghost:
+                data["ghost_element"] = ghost.to_dict()
+        return data
 
     @staticmethod
     def from_dict(d: dict) -> "Document":
@@ -595,6 +686,13 @@ class Document:
             title=d.get("title", "Untitled"),
             elements=elements,
         )
+        # Restore ghost element if it exists
+        if "ghost_element" in d:
+            ghost_element = GhostElement.from_dict(d["ghost_element"])
+            doc.add(ghost_element)
+            doc._ghost_element_id = ghost_element.id
+            doc._ghost_col = ghost_element.col
+            doc._ghost_row = ghost_element.row
         return doc
 
     def reroute_all_arrows(self) -> None:

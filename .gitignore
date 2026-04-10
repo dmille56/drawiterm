@@ -219,3 +219,4 @@ __marimo__/
 .claude*
 .codex
 result*
+/.agent-shell/

@@ -13,6 +13,7 @@ from .models import (
     Document,
     Element,
     EllipseElement,
+    GhostElement,
     PathElement,
     RectElement,
     TextElement,
@@ -279,6 +280,8 @@ def _paint_element(
         _paint_arrow(grid, element, viewport, override_style)
     elif isinstance(element, TextElement):
         _paint_text_element(grid, element, viewport, override_style)
+    elif isinstance(element, GhostElement):
+        _paint_ghost(grid, element, viewport, override_style)
 
 
 # ---------------------------------------------------------------------------
@@ -838,6 +841,25 @@ def _paint_text_cursor(
     col_offset = len(lines[-1])
     tc, tr = viewport.to_terminal(el.col + col_offset, el.row + row_offset)
     grid_set(grid, tc, tr, "│", _STYLE_CURSOR)
+
+
+# ---------------------------------------------------------------------------
+# Ghost element (easter egg)
+# ---------------------------------------------------------------------------
+
+
+def _paint_ghost(
+    grid: CellGrid,
+    el: GhostElement,
+    viewport: Viewport,
+    override_style: Style,
+) -> None:
+    """Paint the ghost emoji at the element's position."""
+    base_style = override_style if override_style.color else _STYLE_GHOST
+    c, r = el.col, el.row
+    tc, tr = viewport.to_terminal(c, r)
+    if 0 <= tr < len(grid) and 0 <= tc < len(grid[tr]):
+        grid_set(grid, tc, tr, "👻", base_style)
 
 
 # ---------------------------------------------------------------------------

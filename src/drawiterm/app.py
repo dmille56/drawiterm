@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from textual import on
@@ -100,6 +101,12 @@ class DrawitermApp(App):
         if filepath and filepath.exists():
             try:
                 self.document = load(filepath)
+            except json.JSONDecodeError as exc:
+                self._load_error = f"Invalid JSON file: {exc}"
+            except FileNotFoundError:
+                self._load_error = "File not found"
+            except KeyError as exc:
+                self._load_error = f"Missing required field: {exc}"
             except Exception as exc:
                 self._load_error = str(exc)
             else:
@@ -310,7 +317,7 @@ class DrawitermApp(App):
         canvas.refresh()
         self._dirty = True
         self._update_status()
-        self.notify("👻 The ghost is watching you!", severity="info")
+        self.notify("👻 The ghost is watching you!", severity="information")
 
     def action_quit_app(self) -> None:
         if self._dirty:
@@ -343,7 +350,7 @@ class DrawitermApp(App):
     def _show_save_dialog(self) -> None:
         from textual.screen import ModalScreen
 
-        class SaveDialog(ModalScreen):
+        class SaveDialog(ModalScreen[None]):
             def compose(self) -> ComposeResult:
                 yield Vertical(
                     Label("Save as (.drawiterm):"),
@@ -358,7 +365,7 @@ class DrawitermApp(App):
                 if event.key == "escape":
                     self.dismiss(None)
 
-        def _on_save(filename: str | None) -> None:
+        def _on_save(filename: str | None) -> None | None:
             if filename:
                 p = Path(filename)
                 if not p.suffix:
@@ -371,7 +378,7 @@ class DrawitermApp(App):
     def _show_open_dialog(self) -> None:
         from textual.screen import ModalScreen
 
-        class OpenDialog(ModalScreen):
+        class OpenDialog(ModalScreen[None]):
             def compose(self) -> ComposeResult:
                 yield Vertical(
                     Label("Open file:"),
@@ -386,7 +393,7 @@ class DrawitermApp(App):
                 if event.key == "escape":
                     self.dismiss(None)
 
-        def _on_open(filename: str | None) -> None:
+        def _on_open(filename: str | None) -> None | None:
             if filename:
                 p = Path(filename)
                 if p.exists():
@@ -400,6 +407,12 @@ class DrawitermApp(App):
                         canvas.selection.selected_ids = set()
                         canvas.refresh()
                         self._update_status()
+                    except json.JSONDecodeError as exc:
+                        self.notify(f"Invalid JSON file: {exc}", severity="error")
+                    except FileNotFoundError:
+                        self.notify("File not found", severity="error")
+                    except KeyError as exc:
+                        self.notify(f"Missing required field: {exc}", severity="error")
                     except Exception as exc:
                         self.notify(f"Error loading file: {exc}", severity="error")
                 else:
@@ -410,7 +423,7 @@ class DrawitermApp(App):
     def _show_quit_confirm(self) -> None:
         from textual.screen import ModalScreen
 
-        class QuitConfirm(ModalScreen):
+        class QuitConfirm(ModalScreen[None]):
             DEFAULT_CSS = """
             QuitConfirm {
                 align: center middle;
@@ -437,7 +450,7 @@ class DrawitermApp(App):
                 else:
                     self.dismiss(False)
 
-        def _on_confirm(quit: bool) -> None:
+        def _on_confirm(quit: bool) -> None | None:
             if quit:
                 self.exit()
 
@@ -449,5 +462,11 @@ class DrawitermApp(App):
             self._dirty = False
             self._update_status()
             self.notify(f"Saved to {path}", severity="information")
+        except PermissionError as exc:
+            self.notify(f"Permission denied: {exc}", severity="error")
+        except json.JSONEncodeError as exc:
+            self.notify(f"Invalid data: {exc}", severity="error")
+        except OSError as exc:
+            self.notify(f"Disk error: {exc}", severity="error")
         except Exception as exc:
             self.notify(f"Save failed: {exc}", severity="error")

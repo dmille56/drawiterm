@@ -205,16 +205,10 @@ class DrawitermApp(App):
     # ------------------------------------------------------------------
 
     def on_key(self, event) -> None:
-        key = event.key
-
-        # Let bindings handle ctrl combos and tab (tab cycles focus by default)
-        if key.startswith("ctrl+") or key.startswith("shift+") or key == "tab":
-            return
-
         canvas = self._canvas()
 
         # Tool shortcuts and canvas keys
-        handled = canvas.handle_key(key)
+        handled = canvas.route_key(event.key)
         if handled:
             # Sync toolbar when tool changes
             tool_id = TOOL_NAME_MAP.get(self.tool_ctrl.current_tool, "select")
@@ -227,6 +221,8 @@ class DrawitermApp(App):
 
     def _track_ghost_position(self, canvas: CanvasWidget) -> None:
         """Move the ghost element to follow the mouse cursor."""
+        if self.document._ghost_element_id is None:
+            return
         ghost = self.document.get_by_id(self.document._ghost_element_id)
         if ghost is None:
             return
@@ -293,7 +289,7 @@ class DrawitermApp(App):
 
     def action_toggle_arrow_style(self) -> None:
         # Reuse existing toggle logic in ToolController.on_key("tab")
-        self._canvas().handle_key("tab")
+        self._canvas().route_key("tab")
         self._update_status()
 
     def action_duplicate(self) -> None:
@@ -325,17 +321,25 @@ class DrawitermApp(App):
         else:
             self.exit()
 
+    def _pan_or_route_edit_key(self, key: str, dc: int, dr: int) -> None:
+        canvas = self._canvas()
+        if self.tool_ctrl.is_editing:
+            if canvas.route_key(key):
+                self._update_status()
+            return
+        canvas.pan(dc, dr)
+
     def action_pan_up(self) -> None:
-        self._canvas().pan(0, -5)
+        self._pan_or_route_edit_key("ctrl+up", 0, -5)
 
     def action_pan_down(self) -> None:
-        self._canvas().pan(0, 5)
+        self._pan_or_route_edit_key("ctrl+down", 0, 5)
 
     def action_pan_left(self) -> None:
-        self._canvas().pan(-5, 0)
+        self._pan_or_route_edit_key("ctrl+left", -5, 0)
 
     def action_pan_right(self) -> None:
-        self._canvas().pan(5, 0)
+        self._pan_or_route_edit_key("ctrl+right", 5, 0)
 
     def action_toggle_tool_lock(self) -> None:
         self.tool_ctrl.tool_lock = not self.tool_ctrl.tool_lock
@@ -464,7 +468,7 @@ class DrawitermApp(App):
             self.notify(f"Saved to {path}", severity="information")
         except PermissionError as exc:
             self.notify(f"Permission denied: {exc}", severity="error")
-        except json.JSONEncodeError as exc:
+        except (TypeError, ValueError) as exc:
             self.notify(f"Invalid data: {exc}", severity="error")
         except OSError as exc:
             self.notify(f"Disk error: {exc}", severity="error")

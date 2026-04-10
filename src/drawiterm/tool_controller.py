@@ -628,6 +628,30 @@ class ToolController:
             self._edit_cursor = max(0, self._edit_cursor - 1)
         elif key == "right":
             self._edit_cursor = min(len(text), self._edit_cursor + 1)
+        elif key == "ctrl+left":
+            self._edit_cursor = _move_cursor_left(text, self._edit_cursor)
+        elif key == "ctrl+right":
+            self._edit_cursor = _move_cursor_right(text, self._edit_cursor)
+        elif key == "ctrl+up":
+            if is_text_el and "\n" in text:
+                before = text[: self._edit_cursor]
+                current_line = before.count("\n")
+                if current_line > 0:
+                    col = len(before.split("\n")[-1])
+                    lines = text.split("\n")
+                    target_col = min(col, len(lines[current_line - 1]))
+                    self._edit_cursor = sum(len(line) + 1 for line in lines[: current_line - 1])
+                    self._edit_cursor += target_col
+        elif key == "ctrl+down":
+            if is_text_el and "\n" in text:
+                before = text[: self._edit_cursor]
+                current_line = before.count("\n")
+                lines = text.split("\n")
+                if current_line < len(lines) - 1:
+                    col = len(before.split("\n")[-1])
+                    target_col = min(col, len(lines[current_line + 1]))
+                    self._edit_cursor = sum(len(line) + 1 for line in lines[: current_line + 1])
+                    self._edit_cursor += target_col
         else:
             # Resolve the character: single-char keys pass through directly;
             # Textual named keys (e.g. "space", "exclamation_mark") are mapped
@@ -835,3 +859,83 @@ def _set_edit_text(el: Element, text: str) -> None:
         el.text = text
     else:
         el.label = text
+
+
+def _is_word_char(char: str) -> bool:
+    return char.isalnum() or char == "_"
+
+
+def _char_kind(char: str) -> str:
+    if char.isspace():
+        return "space"
+    if _is_word_char(char):
+        return "word"
+    return "punct"
+
+
+def _is_subword_boundary(text: str, index: int) -> bool:
+    if index <= 0 or index >= len(text):
+        return False
+
+    left = text[index - 1]
+    right = text[index]
+
+    if left.isspace() or right.isspace():
+        return False
+    if left == "_" or right == "_":
+        return False
+
+    if left.islower() and right.isupper():
+        return True
+    if left.isdigit() != right.isdigit() and (left.isalpha() or right.isalpha()):
+        return True
+    if left.isupper() and right.isupper() and index < len(text) - 1:
+        return text[index + 1].islower()
+    return False
+
+
+def _move_cursor_left(text: str, cursor: int) -> int:
+    idx = cursor
+    if idx <= 0:
+        return 0
+
+    kind = _char_kind(text[idx - 1])
+    if kind == "space":
+        while idx > 0 and _char_kind(text[idx - 1]) == "space":
+            idx -= 1
+        return idx
+
+    if kind == "punct":
+        while idx > 0 and _char_kind(text[idx - 1]) == "punct":
+            idx -= 1
+        return idx
+
+    while idx > 0 and _char_kind(text[idx - 1]) == "word":
+        if _is_subword_boundary(text, idx):
+            break
+        idx -= 1
+    return idx
+
+
+def _move_cursor_right(text: str, cursor: int) -> int:
+    idx = cursor
+    text_len = len(text)
+    if idx >= text_len:
+        return text_len
+
+    kind = _char_kind(text[idx])
+    if kind == "space":
+        while idx < text_len and _char_kind(text[idx]) == "space":
+            idx += 1
+        return idx
+
+    if kind == "punct":
+        while idx < text_len and _char_kind(text[idx]) == "punct":
+            idx += 1
+        return idx
+
+    while idx < text_len and _char_kind(text[idx]) == "word":
+        idx += 1
+        if idx < text_len and _is_subword_boundary(text, idx):
+            break
+    return idx

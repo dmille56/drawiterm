@@ -34,7 +34,7 @@ class StatusBar(Static):
         pos = f"col:{col} row:{row}"
 
         if is_editing:
-            hint = "Esc=commit  Enter=newline(text)  ←→=cursor"
+            hint = "Esc=commit  Enter=newline(text)  ←→=cursor  Ctrl+←/→=word"
         elif tool == "select":
             if selection_count == 0:
                 hint = "Click=select  Drag=rubber-band  Ctrl+A=select-all  R/E/D/A/L/T/X/P=tool"

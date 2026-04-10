@@ -257,7 +257,7 @@ class CanvasWidget(Widget):
     # Keyboard (routed from app)
     # ------------------------------------------------------------------
 
-    def handle_key(self, key: str) -> bool:
+    def route_key(self, key: str) -> bool:
         changed = self.tool_ctrl.on_key(
             key, self.document, self.undo_stack, self.selection, self.preview
         )

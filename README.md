@@ -85,19 +85,10 @@ When tool lock is OFF, the app switches back to Select after using a tool; press
 | `Ctrl+Arrow` | Pan canvas |
 | `Ctrl+Left-drag` | Pan canvas |
 | `Ctrl+Q` | Quit |
-| `Ctrl+G` | Spawn a ghost element (easter egg!) 👻 |
 
 Double-click an element to edit its label. Press `Escape` to commit the edit.
 
-## Easter Egg
-
-Press **Ctrl+G** while hovering over any area to spawn a 👻 ghost element that follows your mouse cursor. The ghost will continuously follow your cursor as you move it around. For more fun, see the [Hidden File Trigger](#hidden-file-trigger) section!
-
-## Hidden File Trigger
-
-Save a file named `ghost.drawiterm` in any directory and navigate into it. The ghost element will automatically spawn when you run drawiterm in that directory!
-
-**Note:** The ghost element does not affect diagram functionality and is only included for fun.
+> **Pro tip:** Some keys do `SpOoKy` things the UI doesn't tell you about. Try the ones you're least likely to use in your workflow.
 
 ## File Format
 

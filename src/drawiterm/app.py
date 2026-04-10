@@ -81,6 +81,7 @@ class DrawitermApp(App):
         ),
         Binding("ctrl+l", "toggle_tool_lock", "Lock Tool", show=False),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
+        Binding("ctrl+g", "spawn_ghost", "Spawn Ghost", show=False),  # 👻
         Binding("ctrl+up", "pan_up", "Pan Up", show=False),
         Binding("ctrl+down", "pan_down", "Pan Down", show=False),
         Binding("ctrl+left", "pan_left", "Pan Left", show=False),
